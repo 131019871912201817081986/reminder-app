@@ -623,3 +623,279 @@ $('saveBtn').onclick=function(){var u=$('inUser').value.trim(),r=$('inRepo').val
 </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FFF6EC">
+<title>poko</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#FFF6EC;--sun:#FFF1D9;--paper:#FFFFFF;--cocoa:#4A3B3E;--dusty:#8B7378;--faint:#B7A0A6;--edge:#F1DFD2;
+  --yel:#FFD971;--yel-bg:#FFF1C9;--yel-ink:#6B4E13;--pink:#FFE3EC;--pink-edge:#F6BCCB;--pink-ink:#A2536A;
+  --mint:#DDF3E4;--mint-edge:#A9DDBB;--mint-ink:#26603B;--sky:#E4EFFA;--sky-ink:#33608A;--red:#C25A48;}
+  @media (prefers-color-scheme:dark){:root{--cream:#241C25;--sun:#2E2130;--paper:#302433;--cocoa:#FBEEF2;--dusty:#C0A8B3;
+  --faint:#8C7683;--edge:#4A3550;--yel-bg:#4A3A1E;--yel-ink:#FFE1A0;--pink:#4A2839;--pink-edge:#7A4159;--pink-ink:#FFC4D8;
+  --mint:#21402F;--mint-edge:#3E6B4F;--mint-ink:#A9E7C1;--sky:#23384D;--sky-ink:#B4D8F3;}}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Baloo 2',system-ui,sans-serif;background:var(--cream);color:var(--cocoa);font-weight:600;overflow:hidden}
+  button{font-family:inherit}
+  :is(button,input,textarea):focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+
+  .pager{display:flex;height:100dvh;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth}
+  .pager::-webkit-scrollbar{display:none}
+  .pane{flex:0 0 100%;scroll-snap-align:start;height:100dvh;overflow-y:auto;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+  .pane::-webkit-scrollbar{display:none}
+
+  .dots{position:fixed;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:7px;z-index:30;pointer-events:none}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--edge)}
+  .dot.on{background:var(--cocoa);width:20px}
+
+  .fab{position:fixed;right:16px;bottom:calc(22px + env(safe-area-inset-bottom));z-index:31;border:none;background:var(--cocoa);color:var(--cream);
+  border-radius:999px;padding:14px 20px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(74,59,62,.28)}
+  .fab:active{transform:scale(.95)}
+
+  .home{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:20px}
+  .bubble{background:var(--paper);border:2.5px solid var(--edge);border-radius:20px;border-bottom-left-radius:7px;padding:9px 15px;font-size:13.5px;font-weight:700;margin-bottom:10px}
+  #bigPoko{cursor:pointer;transform-origin:60px 16px}
+  .wave{animation:wave 3s ease-in-out infinite}
+  .ring{animation:ringa .75s ease-in-out infinite}
+  .jump{animation:jump .55s ease}
+  @keyframes wave{0%,88%,100%{transform:rotate(0)}92%{transform:rotate(-7deg)}96%{transform:rotate(7deg)}}
+  @keyframes ringa{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+  @keyframes jump{0%,100%{transform:translateY(0) scale(1)}35%{transform:translateY(-13px) scale(1.08)}65%{transform:translateY(0) scale(.95)}}
+  .blink{animation:blink 5.5s infinite}
+  @keyframes blink{0%,95.5%,100%{transform:scaleY(1)}97.5%{transform:scaleY(.08)}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+  .hello{font-size:21px;font-weight:800;margin:8px 0 4px}
+  .hsub{font-size:13px;color:var(--dusty);margin-bottom:16px}
+
+  .focus{width:100%;max-width:400px;background:var(--yel-bg);border:3px solid var(--yel);border-radius:26px;padding:16px;margin-bottom:14px;text-align:left}
+  .focus .lbl{font-size:11.5px;font-weight:800;color:var(--yel-ink);opacity:.85;margin-bottom:6px}
+  .focus .task{font-size:20px;font-weight:800;line-height:1.2}
+  .focus .sub{font-size:12.5px;font-weight:700;color:var(--dusty);margin-top:3px}
+  .bigtick{width:100%;margin-top:13px;border:none;background:var(--mint);color:var(--mint-ink);border:3px solid var(--mint-edge);
+  border-radius:999px;padding:13px;font-size:16px;font-weight:800;cursor:pointer}
+  .bigtick:active{transform:scale(.97)}
+  .homebtns{width:100%;max-width:400px;display:grid;gap:9px}
+  .bigbtn{border:2.5px solid var(--edge);background:var(--paper);color:var(--cocoa);border-radius:999px;padding:14px;font-size:15px;font-weight:800;cursor:pointer}
+  .bigbtn.dark{background:var(--cocoa);border-color:var(--cocoa);color:var(--cream)}
+  .allgood{background:var(--mint);border:3px solid var(--mint-edge);color:var(--mint-ink);border-radius:26px;padding:16px;font-size:15px;font-weight:800;width:100%;max-width:400px;margin-bottom:14px}
+
+  .top{display:flex;align-items:center;gap:9px;padding:18px 2px 10px;position:sticky;top:0;background:var(--cream);z-index:5}
+  .top h1{font-size:20px;font-weight:800;flex:1}
+  .icb{width:38px;height:38px;border-radius:50%;background:var(--paper);border:2.5px solid var(--edge);color:var(--dusty);font-size:15px;cursor:pointer;display:grid;place-items:center}
+  .count{background:var(--yel-bg);border:2.5px solid var(--yel);color:var(--yel-ink);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800}
+
+  .grp{font-size:12px;font-weight:800;color:var(--dusty);margin:18px 0 8px;letter-spacing:.03em}
+  .row{background:var(--paper);border:2.5px solid var(--edge);border-radius:20px;padding:10px 11px;margin-bottom:9px;display:flex;align-items:center;gap:10px}
+  .row.due{background:var(--yel-bg);border-color:var(--yel)}
+  .row.done{opacity:.5}
+  .row.done .task{text-decoration:line-through}
+  .tick{width:36px;height:36px;flex-shrink:0;border-radius:50%;border:3px dashed var(--yel);background:var(--paper);font-size:18px;color:var(--mint-ink);display:grid;place-items:center;cursor:pointer;padding:0}
+  .tick.on{background:var(--mint);border:3px solid var(--mint-edge)}
+  .body{flex:1;min-width:0}
+  .task{font-size:16px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+  .sub{font-size:12px;font-weight:600;color:var(--dusty);margin-top:2px}
+  .tag{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:800;margin-left:5px}
+  .more{width:32px;height:32px;flex-shrink:0;border:none;background:transparent;color:var(--faint);font-size:19px;cursor:pointer;border-radius:50%}
+  .empty{border:2.5px dashed var(--edge);border-radius:22px;padding:20px 14px;text-align:center;color:var(--dusty);font-size:13.5px}
+
+  .scene{position:relative;height:150px;border-radius:24px;overflow:hidden;border:2.5px solid var(--edge);width:100%;max-width:400px;margin-top:16px}
+  .bob{animation:bob 3.4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  .fall{position:absolute;top:-14px;animation:fall linear infinite}
+  @keyframes fall{0%{transform:translateY(-14px) rotate(0)}100%{transform:translateY(170px) rotate(320deg)}}
+  .tw{animation:tw 2.8s ease-in-out infinite}
+  @keyframes tw{0%,100%{opacity:.25}50%{opacity:1}}
+  .conf{position:fixed;width:8px;height:10px;border-radius:2px;z-index:60;animation:burst 1s ease-out forwards}
+  @keyframes burst{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(320deg);opacity:0}}
+  .spark{position:fixed;font-size:17px;z-index:60;pointer-events:none;animation:sp .85s ease-out forwards}
+  @keyframes sp{0%{transform:translateY(0) scale(.5);opacity:1}100%{transform:translateY(-38px) scale(1.2);opacity:0}}
+
+  .toast{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:55;border-radius:18px;padding:12px 15px;
+  font-size:14px;font-weight:700;display:none;align-items:center;justify-content:space-between;gap:10px}
+  .toast.ok{display:flex;background:var(--mint);border:3px solid var(--mint-edge);color:var(--mint-ink)}
+  .toast.err{display:flex;background:var(--sky);border:3px solid var(--pink-edge);color:var(--sky-ink)}
+  .undo{border:2.5px solid currentColor;background:transparent;color:inherit;border-radius:999px;padding:4px 13px;font-size:12.5px;font-weight:800;cursor:pointer}
+
+  .bg{position:fixed;inset:0;background:rgba(45,32,36,.5);display:none;align-items:flex-end;justify-content:center;z-index:70}
+  .bg.on{display:flex}
+  .sheet{background:var(--cream);width:100%;max-width:470px;border-radius:30px 30px 0 0;border:3px solid var(--edge);border-bottom:none;
+  padding:18px 16px calc(18px + env(safe-area-inset-bottom));animation:up .22s ease;max-height:92dvh;overflow-y:auto}
+  @keyframes up{from{transform:translateY(50px)}to{transform:translateY(0)}}
+  .sheet h3{font-size:16px;font-weight:800;margin-bottom:10px}
+  .sheet input,.sheet textarea{width:100%;border:2.5px solid var(--edge);border-radius:16px;padding:12px;font:inherit;font-size:16px;font-weight:600;background:var(--paper);color:var(--cocoa);resize:none}
+  .lbl{font-size:11.5px;font-weight:800;color:var(--dusty);margin:13px 0 6px}
+  .chips{display:flex;gap:7px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .chips::-webkit-scrollbar{display:none}
+  .chips.wrap{flex-wrap:wrap;overflow:visible}
+  .chip{flex-shrink:0;background:var(--paper);border:2.5px solid var(--pink-edge);color:var(--pink-ink);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .chip.on{background:var(--yel);border-color:var(--yel);color:var(--yel-ink)}
+  .chip.dash{border-style:dashed}
+  .srow{display:flex;gap:9px;margin-top:16px}
+  .srow button{flex:1;border-radius:999px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;border:2.5px solid var(--edge);background:var(--paper);color:var(--dusty)}
+  .srow button.go{background:var(--cocoa);border-color:var(--cocoa);color:var(--cream)}
+  .srow button.del{background:var(--pink);border-color:var(--pink-edge);color:var(--red)}
+  .listenrow{display:flex;gap:11px;align-items:flex-start;margin-bottom:4px}
+  .mic{position:absolute;right:8px;bottom:8px;width:38px;height:38px;border:none;border-radius:50%;background:var(--pink);color:var(--pink-ink);font-size:18px;cursor:pointer}
+  .mic.on{background:var(--red);color:#fff}
+  .calh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .calh b{font-size:16px;font-weight:800}
+  .cnav{width:38px;height:38px;border-radius:50%;border:2.5px solid var(--edge);background:var(--paper);color:var(--dusty);font-size:16px;font-weight:800;cursor:pointer}
+  .cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cdow{text-align:center;font-size:11px;font-weight:800;color:var(--dusty);padding:3px 0}
+  .cday{aspect-ratio:1;border:none;background:transparent;border-radius:50%;font-size:15px;font-weight:700;color:var(--cocoa);cursor:pointer}
+  .cday:disabled{color:var(--faint);opacity:.4}
+  .cday.today{border:2.5px dashed var(--yel)}
+  .cday.on{background:var(--yel);color:var(--yel-ink);font-weight:800}
+  .setup{padding-top:26px}
+  .setup h2{font-size:19px;font-weight:800;margin-bottom:6px}
+  .setup p{color:var(--dusty);font-size:13.5px;margin-bottom:16px}
+  .setup input{width:100%;border:2.5px solid var(--edge);border-radius:16px;padding:12px;font:inherit;font-size:16px;background:var(--paper);color:var(--cocoa);margin-bottom:11px}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="pager" id="pager">
+  <section class="pane" id="paneHome">
+    <div class="home">
+      <div class="bubble" id="bubble">hello!</div>
+      <svg id="bigPoko" width="118" height="118" viewBox="0 0 120 120" role="img" aria-label="Poko"></svg>
+      <div class="hello" id="helloTxt">poko</div>
+      <div class="hsub" id="helloSub">remembers so you don't have to</div>
+      <div id="focusSlot" style="width:100%;display:flex;justify-content:center"></div>
+      <div class="homebtns">
+        <button class="bigbtn dark" id="homeAdd">&#65291; tell me something</button>
+        <button class="bigbtn" id="homeList">what's on? <span id="homeCount"></span></button>
+      </div>
+      <div class="scene" id="scene"><div id="sceneFx"></div><div id="sceneP" style="position:absolute;left:50%;bottom:30px;width:86px;margin-left:-43px"></div></div>
+    </div>
+  </section>
+
+  <section class="pane" id="paneList">
+    <div class="top">
+      <svg id="miniPoko" width="34" height="34" viewBox="0 0 120 120" aria-hidden="true"></svg>
+      <h1>your list</h1>
+      <span class="count" id="topCount">0/0</span>
+      <button class="icb" id="refreshBtn" aria-label="Refresh">&#8635;</button>
+      <button class="icb" id="gearBtn" aria-label="Settings">&#9881;</button>
+    </div>
+    <div id="lists"></div>
+  </section>
+</div>
+
+<div class="dots" id="dots"><span class="dot on"></span><span class="dot"></span></div>
+<button class="fab" id="fab">&#65291; add</button>
+<div class="toast" id="toast" role="status"></div>
+
+<section class="pane hide" id="setupPane" style="height:auto">
+  <div class="setup">
+    <h2>let's get poko connected</h2>
+    <p>these stay on this phone only. your token needs Issues and Contents set to read &amp; write.</p>
+    <input id="inUser" placeholder="github username" autocomplete="off" autocapitalize="none">
+    <input id="inRepo" value="WhatsappReminder" autocomplete="off" autocapitalize="none">
+    <input id="inToken" type="password" placeholder="github_pat_..." autocomplete="off">
+    <div class="srow"><button class="go" id="saveBtn">save &amp; connect</button></div>
+  </div>
+</section>
+
+<div class="bg" id="addbg"><div class="sheet">
+  <div class="listenrow">
+    <svg id="listenPoko" width="52" height="52" viewBox="0 0 120 120" aria-hidden="true"></svg>
+    <div style="flex:1">
+      <h3 style="margin-bottom:8px">i'm listening…</h3>
+      <div style="position:relative">
+        <textarea id="addText" rows="2" placeholder="dentist tomorrow at 2pm"></textarea>
+        <button class="mic hide" id="micBtn" aria-label="Speak">&#127908;</button>
+      </div>
+    </div>
+  </div>
+  <div class="lbl">when?</div>
+  <div class="chips" id="whenChips">
+    <button class="chip" data-when="today">today</button>
+    <button class="chip" data-when="tomorrow">tomorrow</button>
+    <button class="chip" data-when="next week">next week</button>
+    <button class="chip" id="dateChip">&#128197; date</button>
+  </div>
+  <button class="chip dash" id="moreToggle" style="margin-top:12px">&#65291; more options</button>
+  <div id="moreBox" class="hide">
+    <div class="lbl">tag it</div>
+    <div class="chips" id="catChips"></div>
+    <div class="lbl">when should i text you?</div>
+    <div class="chips">
+      <button class="chip on" data-slot="am">&#127749; morning</button>
+      <button class="chip" data-slot="pm">&#127769; evening</button>
+      <button class="chip" data-slot="both">both</button>
+    </div>
+  </div>
+  <div class="srow"><button id="addCancel">cancel</button><button class="go" id="addGo">add it</button></div>
+</div></div>
+
+<div class="bg" id="actbg"><div class="sheet">
+  <h3 id="actTitle"></h3>
+  <div class="srow"><button id="actEdit">&#9998; edit</button><button class="del" id="actDel">&#10005; delete</button></div>
+  <div class="srow"><button id="actClose">close</button></div>
+</div></div>
+
+<div class="bg" id="editbg"><div class="sheet">
+  <h3>edit reminder</h3>
+  <input id="edText" autocomplete="off">
+  <div class="lbl">time (optional)</div>
+  <input id="edTime" type="time">
+  <div class="srow"><button id="edCancel">cancel</button><button class="go" id="edSave">save</button></div>
+</div></div>
+
+<div class="bg" id="calbg"><div class="sheet">
+  <div class="calh"><button class="cnav" id="calPrev" aria-label="Previous month">&#8249;</button><b id="calTitle"></b><button class="cnav" id="calNext" aria-label="Next month">&#8250;</button></div>
+  <div class="cgrid" id="calGrid"></div>
+  <div class="chips" style="margin-top:14px"><button class="chip" data-cal="0">today</button><button class="chip" data-cal="1">tomorrow</button><button class="chip" data-cal="7">in a week</button></div>
+  <div class="srow"><button id="calCancel">cancel</button></div>
+</div></div>
+
+<div class="bg" id="catbg"><div class="sheet">
+  <h3>new tag</h3>
+  <input id="catName" placeholder="garden" maxlength="16" autocomplete="off">
+  <div class="lbl">pick an emoji</div>
+  <div class="chips wrap" id="catEmojis"></div>
+  <div class="srow"><button id="catCancel">cancel</button><button class="go" id="catSave">add tag</button></div>
+</div></div>
+
+<script>
+var $=function(i){return document.getElementById(i)};
+var BODY='<path d="M60 20 C38 20 30 38 30 56 L30 72 L22 84 L98 84 L90 72 L90 56 C90 38 82 20 60 20 Z" fill="#FFD971" stroke="#4A3B3E" stroke-width="4" stroke-linejoin="round"/><circle cx="60" cy="16" r="7" fill="#FFD971" stroke="#4A3B3E" stroke-width="4"/><circle cx="60" cy="92" r="8" fill="#FFD971" stroke="#4A3B3E" stroke-width="4"/><circle cx="40" cy="63" r="5" fill="#FFB7C5"/><circle cx="80" cy="63" r="5" fill="#FFB7C5"/>';
+var EY='<g class="blink" style="transform-origin:60px 55px"><circle cx="49" cy="55" r="4.5" fill="#4A3B3E"/><circle cx="71" cy="55" r="4.5" fill="#4A3B3E"/><circle cx="50.6" cy="53.4" r="1.6" fill="#fff"/><circle cx="72.6" cy="53.4" r="1.6" fill="#fff"/></g>';
+var F={
+ hi:BODY+EY+'<path d="M53 64 Q60 70 67 64" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/>',
+ nap:BODY+'<path d="M43 55 Q49 49 55 55" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M65 55 Q71 49 77 55" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/><ellipse cx="60" cy="67" rx="4" ry="5" fill="#4A3B3E"/>',
+ yay:BODY+'<path d="M43 50 L49 58 L55 50" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M65 50 L71 58 L77 50" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M50 65 Q60 75 70 65 Z" fill="#4A3B3E"/>',
+ hmm:BODY+'<circle cx="49" cy="56" r="4.5" fill="#4A3B3E"/><circle cx="71" cy="56" r="4.5" fill="#4A3B3E"/><path d="M42 46 Q49 43 56 47" stroke="#4A3B3E" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M64 47 Q71 43 78 46" stroke="#4A3B3E" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M53 69 Q60 64 67 69" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/>',
+ ring:BODY+EY+'<ellipse cx="60" cy="67" rx="7" ry="6" fill="#4A3B3E"/>',
+ proud:BODY+'<path d="M43 52 Q49 46 55 52" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M65 52 Q71 46 77 52" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M50 64 Q60 74 70 64 Z" fill="#4A3B3E"/><path d="M18 30 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 z" fill="#FFD971" stroke="#4A3B3E" stroke-width="2"/><path d="M102 28 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 z" fill="#FFD971" stroke="#4A3B3E" stroke-width="2"/>',
+ listen:BODY+EY+'<ellipse cx="60" cy="66" rx="6" ry="5" fill="#4A3B3E"/>'
+};
+var POKES=['boop!','hehe that tickles','i\u2019m a bell, you know','ding!','*wobble*','stop it, i\u2019m ticklish','i\u2019ve been practising'];
+var TICKSAY=['nice one!','done!','get in','lovely stuff','one down','look at you go'];
+var mood='hi';
+function face(el,m){ el.innerHTML=F[m]||F.hi; }
+function setMood(m){
+ mood=m;
+ face($('bigPoko'),m); face($('miniPoko'),m==='ring'?'ring':'hi');
+ $('bigPoko').className=(m==='ring'?'ring':'wave');
+ drawScene();
+}
+function buzz(ms){ try{ if(navigator.vibrate)navigator.vibrate(ms||12); }catch(e){} }
+$('bigPoko').addEventListener('click',function(){
+ var el=$('bigPoko'); el.className='jump'; buzz(8);
+ $('helloSub').textContent=POKES[Math.floor(Math.random()*POKES.length)];
+ setTimeout(function(){ el.className=(mood==='ring'?'ring':'wave'); },560);
+});
+
+var wx={rain:false,sunny:false,cold:false};
+fetch('https://api.open-meteo.com/v1/forecast?latitude=54.5973&longitude=-5.9301&daily=weather_code,temperature_2m_max,preci
