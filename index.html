@@ -3,407 +3,376 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#12332C">
-<title>Remind Me</title>
+<meta name="theme-color" content="#FFF6EC">
+<title>poko</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --pine: #12332C;
-    --pine-soft: #29544A;
-    --leaf: #2E9E6B;
-    --mist: #EDF5F0;
-    --paper: #FFFFFF;
-    --sun: #F5C443;
-    --ink: #1C2B27;
-    --ink-soft: #5C6F69;
-    --line: #D8E6DF;
-    --radius-bubble: 22px;
+    --cream: #FFF6EC; --paper: #FFFFFF; --cocoa: #4A3B3E; --dusty: #A08A8E;
+    --faint: #C9B4B9; --edge: #F1DFD2; --yel: #FFD971; --yel-bg: #FFF1C9;
+    --yel-ink: #6B4E13; --pink: #FFE3EC; --pink-edge: #F6BCCB; --pink-ink: #B26478;
+    --mint: #DDF3E4; --mint-edge: #A9DDBB; --mint-ink: #2E6B44;
+    --sky: #E4EFFA; --sky-edge: #B7D5EE; --sky-ink: #3D6C96; --lilac-ink: #7A5AA8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --cream: #241C25; --paper: #302433; --cocoa: #FBEEF2; --dusty: #B69EAA;
+      --faint: #8C7683; --edge: #453247; --yel-bg: #4A3A1E; --yel-ink: #FFE1A0;
+      --pink: #4A2839; --pink-edge: #7A4159; --pink-ink: #FFC4D8;
+      --mint: #21402F; --mint-edge: #3E6B4F; --mint-ink: #A9E7C1;
+      --sky: #23384D; --sky-edge: #3E5E7C; --sky-ink: #B4D8F3; --lilac-ink: #D5BEF5;
+    }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    font-family: 'Nunito', system-ui, sans-serif;
-    background: var(--mist);
-    color: var(--ink);
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-  .app {
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 0 18px calc(28px + env(safe-area-inset-bottom));
-    display: flex;
-    flex-direction: column;
-    min-height: 100dvh;
-  }
-
-  /* Header */
-  header {
-    padding: 26px 2px 18px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  header h1 {
-    font-size: 1.5rem;
-    font-weight: 900;
-    color: var(--pine);
-    letter-spacing: -0.02em;
-  }
-  header h1 span { color: var(--leaf); }
-  .gear {
-    border: none;
-    background: var(--paper);
-    border: 1px solid var(--line);
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    font-size: 1.05rem;
-    cursor: pointer;
-    display: grid; place-items: center;
-    color: var(--pine-soft);
-  }
-  .gear:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
-    outline: 3px solid var(--sun);
-    outline-offset: 2px;
-  }
-
-  /* Composer — the signature chat bubble */
-  .composer {
-    background: var(--pine);
-    border-radius: var(--radius-bubble);
-    border-bottom-left-radius: 6px;
-    padding: 18px;
-    color: #fff;
-    box-shadow: 0 10px 24px rgba(18, 51, 44, 0.18);
-  }
-  .composer label {
-    display: block;
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: #BFDCCB;
-    margin-bottom: 10px;
-  }
-  .composer textarea {
-    width: 100%;
-    border: none;
-    resize: none;
-    background: var(--pine-soft);
-    color: #fff;
-    border-radius: 14px;
-    padding: 13px 14px;
-    font: inherit;
-    font-size: 1.05rem;
-    font-weight: 600;
-    min-height: 74px;
-  }
-  .composer textarea::placeholder { color: #9DBBAE; font-weight: 500; }
-  .composer-row {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 12px;
-  }
-  .send {
-    border: none;
-    background: var(--sun);
-    color: var(--pine);
-    font: inherit;
-    font-weight: 800;
-    font-size: 1rem;
-    padding: 11px 22px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: transform 0.12s ease;
-  }
-  .send:active { transform: scale(0.96); }
-  .send:disabled { opacity: 0.55; cursor: default; }
-
-  /* Status toast */
-  .toast {
-    margin-top: 14px;
-    border-radius: 14px;
-    padding: 12px 14px;
-    font-weight: 700;
-    font-size: 0.95rem;
-    display: none;
-  }
-  .toast.ok { display: block; background: #DDF2E4; color: #14522F; }
-  .toast.err { display: block; background: #FBE3DE; color: #7C2D1C; }
-
-  /* Upcoming list */
-  .upcoming { margin-top: 26px; flex: 1; }
-  .upcoming h2 {
-    font-size: 1.05rem;
-    font-weight: 800;
-    color: var(--pine);
-    margin-bottom: 4px;
-  }
-  .upcoming p.sub {
-    color: var(--ink-soft);
-    font-size: 0.9rem;
-    font-weight: 600;
-    margin-bottom: 14px;
-  }
-  .item {
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-bubble);
-    border-top-right-radius: 6px;
-    padding: 13px 16px;
-    margin-bottom: 10px;
-    display: flex;
-    gap: 12px;
-    align-items: baseline;
-  }
-  .item .when {
-    flex-shrink: 0;
-    font-weight: 800;
-    font-size: 0.85rem;
-    color: var(--leaf);
-    min-width: 64px;
-  }
-  .item .when.today { color: #C77800; }
-  .item .what { font-weight: 600; font-size: 0.98rem; }
-  .empty {
-    color: var(--ink-soft);
-    font-weight: 600;
-    background: none;
-    border: 2px dashed var(--line);
-    border-radius: var(--radius-bubble);
-    padding: 22px 16px;
-    text-align: center;
-  }
-
-  /* Setup panel */
-  .setup {
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-bubble);
-    padding: 20px 18px;
-    margin-top: 8px;
-  }
-  .setup h2 { font-size: 1.15rem; font-weight: 900; color: var(--pine); margin-bottom: 6px; }
-  .setup p { color: var(--ink-soft); font-size: 0.92rem; font-weight: 600; margin-bottom: 16px; }
-  .field { margin-bottom: 13px; }
-  .field label {
-    display: block;
-    font-weight: 800;
-    font-size: 0.88rem;
-    color: var(--pine-soft);
-    margin-bottom: 6px;
-  }
-  .field input {
-    width: 100%;
-    border: 1.5px solid var(--line);
-    border-radius: 12px;
-    padding: 11px 12px;
-    font: inherit;
-    font-weight: 600;
-    background: var(--mist);
-  }
-  .save {
-    width: 100%;
-    border: none;
-    background: var(--pine);
-    color: #fff;
-    font: inherit;
-    font-weight: 800;
-    font-size: 1rem;
-    padding: 13px;
-    border-radius: 999px;
-    cursor: pointer;
-    margin-top: 4px;
-  }
+  body { font-family: 'Baloo 2', system-ui, sans-serif; background: var(--cream); color: var(--cocoa); min-height: 100dvh; font-weight: 600; }
+  .app { max-width: 470px; margin: 0 auto; padding: 0 16px calc(26px + env(safe-area-inset-bottom)); }
+  header { padding: 20px 2px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand h1 { font-size: 24px; font-weight: 800; line-height: 1; }
+  .brand p { font-size: 12.5px; color: var(--dusty); margin-top: 1px; }
+  .iconbtn { width: 38px; height: 38px; border-radius: 50%; background: var(--paper); border: 2.5px solid var(--edge); color: var(--dusty); font-size: 16px; cursor: pointer; display: grid; place-items: center; font-family: inherit; }
+  .header-actions { display: flex; gap: 7px; }
+  :is(button,input,textarea):focus-visible { outline: 3px solid var(--yel); outline-offset: 2px; }
+  .composer { background: var(--pink); border: 2.5px solid var(--pink-edge); border-radius: 28px; border-bottom-left-radius: 10px; padding: 15px; }
+  .composer > label { display: block; font-size: 14px; font-weight: 700; color: var(--pink-ink); margin-bottom: 9px; }
+  .inputrow { position: relative; }
+  .composer textarea { width: 100%; border: none; resize: none; background: var(--paper); color: var(--cocoa); border-radius: 18px; padding: 12px 46px 12px 13px; font: inherit; font-size: 15px; min-height: 66px; }
+  .composer textarea::placeholder { color: var(--faint); }
+  .mic { position: absolute; right: 7px; top: 7px; width: 34px; height: 34px; border: none; border-radius: 50%; background: transparent; color: var(--pink-ink); font-size: 17px; cursor: pointer; font-family: inherit; }
+  .mic.listening { background: #E2574C; color: #fff; }
+  .chips { display: flex; gap: 7px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  .chip { background: var(--paper); border: 2.5px solid var(--pink-edge); color: var(--pink-ink); border-radius: 999px; padding: 5px 13px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .chip.picked { background: var(--yel); border-color: var(--yel); color: var(--yel-ink); }
+  .composer-row { display: flex; justify-content: flex-end; margin-top: 10px; }
+  .send { border: none; background: var(--cocoa); color: var(--cream); border-radius: 999px; padding: 9px 22px; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform .12s ease; }
+  .send:active { transform: scale(.95); }
+  .send:disabled { opacity: .55; }
+  .toast { margin-top: 11px; border-radius: 16px; padding: 10px 13px; font-size: 13.5px; font-weight: 700; display: none; }
+  .toast.ok { display: block; background: var(--mint); border: 2.5px solid var(--mint-edge); color: var(--mint-ink); }
+  .toast.err { display: block; background: var(--sky); border: 2.5px solid var(--sky-edge); color: var(--sky-ink); }
+  .section { margin-top: 18px; }
+  .section h2 { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+  .item { background: var(--paper); border: 2.5px solid var(--edge); border-radius: 22px; border-top-right-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 9px; }
+  .item.hot { background: var(--yel-bg); border-color: var(--yel); }
+  .badge { flex-shrink: 0; border-radius: 999px; padding: 4px 10px; font-size: 11.5px; font-weight: 800; white-space: nowrap; }
+  .b-today { background: var(--yel); color: var(--yel-ink); }
+  .b-soon { background: var(--sky); color: var(--sky-ink); }
+  .b-rep { background: var(--pink); color: var(--pink-ink); }
+  .what { flex: 1; font-size: 14.5px; overflow-wrap: anywhere; }
+  .what small { color: var(--dusty); font-size: 12px; font-weight: 600; }
+  .tool { flex-shrink: 0; border: 2.5px solid var(--edge); background: var(--paper); border-radius: 999px; font: inherit; font-size: 11.5px; font-weight: 800; padding: 4px 9px; cursor: pointer; color: var(--lilac-ink); }
+  .tool.circ { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; color: #D88B8B; font-size: 14px; }
+  .nap { text-align: center; padding: 20px 12px; color: var(--dusty); font-size: 13.5px; }
+  .setup { background: var(--paper); border: 2.5px solid var(--edge); border-radius: 26px; padding: 18px; margin-top: 6px; }
+  .setup h2 { font-size: 17px; font-weight: 800; margin-bottom: 5px; }
+  .setup p { color: var(--dusty); font-size: 13px; margin-bottom: 14px; }
+  .field { margin-bottom: 11px; }
+  .field label { display: block; font-size: 13px; font-weight: 700; color: var(--dusty); margin-bottom: 5px; }
+  .field input { width: 100%; border: 2.5px solid var(--edge); border-radius: 14px; padding: 10px 12px; font: inherit; font-size: 14px; background: var(--cream); color: var(--cocoa); }
+  .save { width: 100%; border: none; background: var(--cocoa); color: var(--cream); border-radius: 999px; padding: 12px; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; margin-top: 3px; }
+  .foot { text-align: center; margin-top: 16px; font-size: 11.5px; color: var(--faint); font-weight: 700; }
   .hidden { display: none !important; }
-
-  @media (prefers-reduced-motion: reduce) {
-    .send { transition: none; }
-  }
+  @media (prefers-reduced-motion: reduce) { .send { transition: none; } }
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <h1>Remind <span>me</span></h1>
-    <button class="gear" id="gearBtn" aria-label="Settings">⚙</button>
+    <div class="brand">
+      <svg id="poko" width="46" height="46" viewBox="0 0 120 120" role="img" aria-label="Poko"></svg>
+      <div>
+        <h1>poko</h1>
+        <p id="pokoLine">remembers so you don't have to</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="iconbtn" id="refreshBtn" aria-label="Refresh">&#8635;</button>
+      <button class="iconbtn" id="gearBtn" aria-label="Settings">&#9881;</button>
+    </div>
   </header>
 
-  <!-- First-run / settings -->
   <section class="setup hidden" id="setupPanel">
-    <h2>Connect to your reminders</h2>
-    <p>These details stay in this browser only. The token should be a fine-grained one that can open issues and read contents on your reminder repo — nothing else.</p>
-    <div class="field">
-      <label for="inUser">GitHub username</label>
-      <input id="inUser" autocomplete="off" autocapitalize="none" placeholder="e.g. 13101987...">
-    </div>
-    <div class="field">
-      <label for="inRepo">Reminder repo name</label>
-      <input id="inRepo" autocomplete="off" autocapitalize="none" value="WhatsappReminder">
-    </div>
-    <div class="field">
-      <label for="inToken">Fine-grained access token</label>
-      <input id="inToken" type="password" autocomplete="off" placeholder="github_pat_...">
-    </div>
-    <button class="save" id="saveBtn">Save and connect</button>
+    <h2>let's get poko connected</h2>
+    <p>these stay on this phone only. your token needs Issues (read &amp; write) and Contents (read &amp; write) on your reminder repo.</p>
+    <div class="field"><label for="inUser">github username</label><input id="inUser" autocomplete="off" autocapitalize="none"></div>
+    <div class="field"><label for="inRepo">reminder repo</label><input id="inRepo" autocomplete="off" autocapitalize="none" value="WhatsappReminder"></div>
+    <div class="field"><label for="inToken">access token</label><input id="inToken" type="password" autocomplete="off" placeholder="github_pat_..."></div>
+    <button class="save" id="saveBtn">save &amp; connect</button>
   </section>
 
-  <!-- Main app -->
   <main class="hidden" id="mainPanel">
     <section class="composer">
-      <label for="reminderText">What should I remind you about?</label>
-      <textarea id="reminderText" placeholder="e.g. dentist appointment on 5 July"></textarea>
-      <div class="composer-row">
-        <button class="send" id="sendBtn">Add reminder</button>
+      <label for="reminderText">what shall i remind you about?</label>
+      <div class="inputrow">
+        <textarea id="reminderText" placeholder="dentist on 12 sept... or bins every monday"></textarea>
+        <button class="mic hidden" id="micBtn" aria-label="Speak">&#127908;</button>
       </div>
+      <div class="chips">
+        <button class="chip" data-add="tomorrow">tomorrow</button>
+        <button class="chip" data-add="next week">next week</button>
+        <button class="chip" id="dateChip">pick a date</button>
+        <input type="date" id="datePick" class="hidden" aria-label="Pick a date">
+      </div>
+      <div class="composer-row"><button class="send" id="sendBtn">add it</button></div>
     </section>
     <div class="toast" id="toast" role="status"></div>
-
-    <section class="upcoming">
-      <h2>Coming up</h2>
-      <p class="sub">You'll get each one on WhatsApp the morning it's due.</p>
-      <div id="list"><div class="empty">Loading your list…</div></div>
-    </section>
+    <div id="lists"></div>
+    <p class="foot">poko texts you ~9am &middot; heads-up ~6pm &middot; week ahead sundays</p>
   </main>
 </div>
 
 <script>
-  const $ = (id) => document.getElementById(id);
-  const store = {
-    get: () => ({
-      user: localStorage.getItem('rm_user') || '',
-      repo: localStorage.getItem('rm_repo') || 'WhatsappReminder',
-      token: localStorage.getItem('rm_token') || ''
-    }),
-    set: (user, repo, token) => {
-      localStorage.setItem('rm_user', user);
-      localStorage.setItem('rm_repo', repo);
-      localStorage.setItem('rm_token', token);
-    }
+  var $ = function(id){ return document.getElementById(id); };
+  var BELL = '<path d="M60 20 C38 20 30 38 30 56 L30 72 L22 84 L98 84 L90 72 L90 56 C90 38 82 20 60 20 Z" fill="#FFD971" stroke="#4A3B3E" stroke-width="4" stroke-linejoin="round"/><circle cx="60" cy="16" r="7" fill="#FFD971" stroke="#4A3B3E" stroke-width="4"/><circle cx="60" cy="92" r="8" fill="#FFD971" stroke="#4A3B3E" stroke-width="4"/><circle cx="40" cy="63" r="5" fill="#FFB7C5"/><circle cx="80" cy="63" r="5" fill="#FFB7C5"/>';
+  var FACES = {
+    hi: BELL + '<circle cx="49" cy="55" r="4.5" fill="#4A3B3E"/><circle cx="71" cy="55" r="4.5" fill="#4A3B3E"/><circle cx="50.6" cy="53.4" r="1.6" fill="#fff"/><circle cx="72.6" cy="53.4" r="1.6" fill="#fff"/><path d="M53 64 Q60 70 67 64" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/>',
+    nap: BELL + '<path d="M43 55 Q49 49 55 55" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M65 55 Q71 49 77 55" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/><ellipse cx="60" cy="67" rx="4" ry="5" fill="#4A3B3E"/>',
+    yay: BELL + '<path d="M43 50 L49 58 L55 50" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M65 50 L71 58 L77 50" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M50 65 Q60 75 70 65 Z" fill="#4A3B3E"/>',
+    hmm: BELL + '<circle cx="49" cy="56" r="4.5" fill="#4A3B3E"/><circle cx="71" cy="56" r="4.5" fill="#4A3B3E"/><path d="M42 46 Q49 43 56 47" stroke="#4A3B3E" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M64 47 Q71 43 78 46" stroke="#4A3B3E" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M53 69 Q60 64 67 69" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/>',
+    ring: '<path d="M12 42 q-5 8 0 16" stroke="#4A3B3E" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M108 42 q5 8 0 16" stroke="#4A3B3E" stroke-width="3" fill="none" stroke-linecap="round"/><g transform="rotate(-9 60 20)">' + BELL + '<circle cx="49" cy="55" r="4.5" fill="#4A3B3E"/><circle cx="71" cy="55" r="4.5" fill="#4A3B3E"/><ellipse cx="60" cy="67" rx="7" ry="6" fill="#4A3B3E"/></g>'
   };
-
-  function showSetup() {
-    const cfg = store.get();
-    $('inUser').value = cfg.user;
-    $('inRepo').value = cfg.repo;
-    $('inToken').value = cfg.token;
-    $('setupPanel').classList.remove('hidden');
-    $('mainPanel').classList.add('hidden');
+  var LINES = {
+    hi: ["remembers so you don't have to", "at your service", "what's on today?"],
+    nap: ["zzz... nothing due", "having a little nap"],
+    yay: ["got it!! noted", "consider it remembered"],
+    hmm: ["hmm, i'm not sure...", "that one confused me"],
+    ring: ["something's due today!", "ding ding! it's today"]
+  };
+  function setMood(m) {
+    $('poko').innerHTML = FACES[m] || FACES.hi;
+    var l = LINES[m] || LINES.hi;
+    $('pokoLine').textContent = l[Math.floor(Math.random() * l.length)];
   }
-  function showMain() {
-    $('setupPanel').classList.add('hidden');
-    $('mainPanel').classList.remove('hidden');
-    loadUpcoming();
-  }
+  setMood('hi');
 
+  var store = {
+    get: function(){ return { user: localStorage.getItem('rm_user') || '', repo: localStorage.getItem('rm_repo') || 'WhatsappReminder', token: localStorage.getItem('rm_token') || '' }; },
+    set: function(u,r,t){ localStorage.setItem('rm_user',u); localStorage.setItem('rm_repo',r); localStorage.setItem('rm_token',t); }
+  };
+  function api(path, opts) {
+    opts = opts || {};
+    var cfg = store.get();
+    var h = { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github+json' };
+    return fetch('https://api.github.com/repos/' + cfg.user + '/' + cfg.repo + path, { method: opts.method, body: opts.body, headers: h });
+  }
   function toast(msg, kind) {
-    const t = $('toast');
-    t.textContent = msg;
-    t.className = 'toast ' + kind;
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => { t.className = 'toast'; }, 6000);
+    var t = $('toast');
+    t.textContent = msg; t.className = 'toast ' + kind;
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.className = 'toast'; }, 6000);
+  }
+  function showSetup() {
+    var c = store.get();
+    $('inUser').value = c.user; $('inRepo').value = c.repo; $('inToken').value = c.token;
+    $('setupPanel').classList.remove('hidden'); $('mainPanel').classList.add('hidden');
+  }
+  function showMain() { $('setupPanel').classList.add('hidden'); $('mainPanel').classList.remove('hidden'); loadList(); }
+
+  function addReminder() {
+    var text = $('reminderText').value.trim();
+    if (!text) { setMood('hmm'); toast('tell me something first!', 'err'); return; }
+    $('sendBtn').disabled = true;
+    api('/issues', { method:'POST', body: JSON.stringify({ title: text }) })
+      .then(function(res){
+        if (!res.ok) throw new Error('github said ' + res.status);
+        $('reminderText').value = ''; clearChips(); setMood('yay');
+        toast('got it! check whatsapp for my note', 'ok');
+        setTimeout(loadList, 20000);
+      })
+      .catch(function(e){ setMood('hmm'); toast("couldn't send that - check settings (" + e.message + ')', 'err'); })
+      .then(function(){ $('sendBtn').disabled = false; });
   }
 
-  function api(path, opts = {}) {
-    const cfg = store.get();
-    return fetch('https://api.github.com/repos/' + cfg.user + '/' + cfg.repo + path, {
-      ...opts,
-      headers: {
-        'Authorization': 'Bearer ' + cfg.token,
-        'Accept': 'application/vnd.github+json',
-        ...(opts.headers || {})
+  var fileSha = null, rawLines = [];
+  function parseLine(line) {
+    var t = line.trim(), m;
+    if (!t || t.charAt(0) === '#') return null;
+    if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})\s+(.*)$/))) return { kind:'dated', d:new Date(+m[1], +m[2]-1, +m[3]), text:m[4] };
+    if ((m = t.match(/^EVERY\s+day\s+(.*)$/i))) return { kind:'daily', text:m[1] };
+    if ((m = t.match(/^EVERY\s+month:(\d{1,2})\s+(.*)$/i))) return { kind:'monthly', day:+m[1], text:m[2] };
+    if ((m = t.match(/^EVERY\s+((?:mon|tue|wed|thu|fri|sat|sun)(?:,(?:mon|tue|wed|thu|fri|sat|sun))*)\s+(.*)$/i))) return { kind:'weekly', days:m[1].toLowerCase().split(','), text:m[2] };
+    return { kind:'daily', text:t };
+  }
+  function loadList() {
+    var wrap = $('lists');
+    api('/contents/reminders.txt').then(function(res){
+      if (!res.ok) throw new Error(res.status);
+      return res.json();
+    }).then(function(data){
+      fileSha = data.sha;
+      var text = decodeURIComponent(escape(atob(data.content.replace(/\n/g,''))));
+      rawLines = text.split('\n');
+      var today = new Date(); today.setHours(0,0,0,0);
+      var dated = [], reps = [], daily = [];
+      rawLines.forEach(function(line, i){
+        var p = parseLine(line);
+        if (!p) return;
+        p.idx = i;
+        if (p.kind === 'dated') { if (p.d >= today) dated.push(p); }
+        else if (p.kind === 'daily') daily.push(p);
+        else reps.push(p);
+      });
+      dated.sort(function(a,b){ return a.d - b.d; });
+      wrap.innerHTML = '';
+      var hot = dated.filter(function(p){ return p.d.getTime() === today.getTime(); });
+      var soon = dated.filter(function(p){ return p.d.getTime() !== today.getTime(); });
+      if (!dated.length && !reps.length && !daily.length) {
+        setMood('nap');
+        wrap.innerHTML = '<div class="section"><div class="nap">nothing on the list yet - tell me something above</div></div>';
+        return;
       }
+      setMood(hot.length ? 'ring' : 'hi');
+      if (hot.length) wrap.appendChild(sec('today!', hot.map(function(p){ return row(p, today, true); })));
+      if (soon.length) wrap.appendChild(sec('coming up', soon.map(function(p){ return row(p, today, false); })));
+      if (reps.length) wrap.appendChild(sec('on repeat', reps.map(function(p){ return row(p, today, false); })));
+      if (daily.length) wrap.appendChild(sec('every day', daily.map(function(p){ return row(p, today, false); })));
+    }).catch(function(){
+      setMood('hmm');
+      wrap.innerHTML = '<div class="section"><div class="nap">i can\'t reach your list - check the settings</div></div>';
+    });
+  }
+  function sec(title, nodes) {
+    var s = document.createElement('section');
+    s.className = 'section';
+    var h = document.createElement('h2');
+    h.textContent = title;
+    s.appendChild(h);
+    nodes.forEach(function(n){ s.appendChild(n); });
+    return s;
+  }
+  function row(p, today, isHot) {
+    var div = document.createElement('div');
+    div.className = 'item' + (isHot ? ' hot' : '');
+    var b = document.createElement('span');
+    b.className = 'badge ' + (isHot ? 'b-today' : (p.kind === 'dated' ? 'b-soon' : 'b-rep'));
+    var t = document.createElement('span');
+    t.className = 'what'; t.textContent = p.text;
+    if (p.kind === 'dated') {
+      var diff = Math.round((p.d - today) / 86400000);
+      b.textContent = isHot ? 'today!' : (diff === 1 ? 'tomorrow' : (diff < 7 ? 'in ' + diff + ' days' : new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'}).format(p.d)));
+      var sm = document.createElement('small');
+      sm.textContent = ' - ' + new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'short'}).format(p.d).toLowerCase();
+      t.appendChild(sm);
+    } else if (p.kind === 'weekly') { b.textContent = p.days.join(', '); }
+    else if (p.kind === 'monthly') { b.textContent = 'day ' + p.day; }
+    else { b.textContent = 'daily'; }
+    div.appendChild(b); div.appendChild(t);
+    if (p.kind === 'dated') {
+      var sn = document.createElement('button');
+      sn.className = 'tool'; sn.textContent = '+1d';
+      sn.setAttribute('aria-label','Push back a day');
+      sn.onclick = function(){ bump(p); };
+      div.appendChild(sn);
+    }
+    var del = document.createElement('button');
+    del.className = 'tool circ'; del.textContent = '\u2715';
+    del.setAttribute('aria-label','Delete');
+    del.onclick = function(){ if (confirm('forget "' + p.text + '"?')) remove(p); };
+    div.appendChild(del);
+    return div;
+  }
+  function b64(s){ return btoa(unescape(encodeURIComponent(s))); }
+  function saveLines(lines, msg) {
+    return api('/contents/reminders.txt', { method:'PUT', body: JSON.stringify({ message: msg, content: b64(lines.join('\n')), sha: fileSha }) })
+      .then(function(res){
+        if (res.status === 409) { loadList(); toast('list just changed - try again', 'err'); return false; }
+        if (!res.ok) { toast("couldn't save - token needs Contents read & write", 'err'); return false; }
+        return true;
+      });
+  }
+  function remove(p) {
+    saveLines(rawLines.filter(function(_,i){ return i !== p.idx; }), 'Delete reminder').then(function(ok){
+      if (ok) { toast('forgotten', 'ok'); loadList(); }
+    });
+  }
+  function bump(p) {
+    var nd = new Date(p.d); nd.setDate(nd.getDate() + 1);
+    var iso = nd.getFullYear() + '-' + String(nd.getMonth()+1).padStart(2,'0') + '-' + String(nd.getDate()).padStart(2,'0');
+    var lines = rawLines.slice();
+    lines[p.idx] = iso + ' ' + p.text;
+    saveLines(lines, 'Snooze +1 day').then(function(ok){
+      if (ok) { toast('pushed to ' + new Intl.DateTimeFormat('en-GB',{weekday:'long',day:'numeric',month:'long'}).format(nd).toLowerCase(), 'ok'); loadList(); }
     });
   }
 
-  // --- Add a reminder (creates an issue; the repo's workflow does the rest) ---
-  async function addReminder() {
-    const text = $('reminderText').value.trim();
-    if (!text) { toast('Type a reminder first.', 'err'); return; }
-    $('sendBtn').disabled = true;
-    try {
-      const res = await api('/issues', {
-        method: 'POST',
-        body: JSON.stringify({ title: text })
+  function clearChips(){
+    var cs = document.querySelectorAll('.chip');
+    for (var i=0;i<cs.length;i++) cs[i].classList.remove('picked');
+    $('dateChip').textContent = 'pick a date';
+  }
+  var addChips = document.querySelectorAll('.chip[data-add]');
+  for (var i=0;i<addChips.length;i++) {
+    (function(chip){
+      chip.addEventListener('click', function(){
+        var ta = $('reminderText');
+        ta.value = (ta.value.replace(/\s+(tomorrow|next week|on \d{4}-\d{2}-\d{2})\s*$/i,'').trim() + ' ' + chip.getAttribute('data-add')).trim();
+        clearChips(); chip.classList.add('picked'); ta.focus();
       });
-      if (!res.ok) throw new Error('GitHub said ' + res.status);
-      $('reminderText').value = '';
-      toast('Sent! Watch WhatsApp for your confirmation.', 'ok');
-      setTimeout(loadUpcoming, 20000); // give the robot time to commit
-    } catch (e) {
-      toast("Couldn't add it — check your connection or token in ⚙. (" + e.message + ')', 'err');
-    } finally {
-      $('sendBtn').disabled = false;
-    }
+    })(addChips[i]);
   }
-
-  // --- Read reminders.txt and show what's coming ---
-  async function loadUpcoming() {
-    const list = $('list');
-    try {
-      const res = await api('/contents/reminders.txt', {
-        headers: { 'Accept': 'application/vnd.github.raw+json' }
-      });
-      if (!res.ok) throw new Error(res.status);
-      const lines = (await res.text()).split('\n');
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const dated = [], daily = [];
-      for (const raw of lines) {
-        const line = raw.trim();
-        if (!line || line.startsWith('#')) continue;
-        const m = line.match(/^(\d{4})-(\d{2})-(\d{2})\s+(.*)$/);
-        if (m) {
-          const d = new Date(+m[1], +m[2] - 1, +m[3]);
-          if (d >= today) dated.push({ d, text: m[4] });
-        } else {
-          daily.push(line);
-        }
-      }
-      dated.sort((a, b) => a.d - b.d);
-      list.innerHTML = '';
-      if (!dated.length && !daily.length) {
-        list.innerHTML = '<div class="empty">Nothing scheduled yet — add your first reminder above.</div>';
-        return;
-      }
-      const fmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
-      for (const r of dated) {
-        const isToday = r.d.getTime() === today.getTime();
-        list.appendChild(item(isToday ? 'Today' : fmt.format(r.d), r.text, isToday));
-      }
-      for (const t of daily) list.appendChild(item('Daily', t, false));
-    } catch (e) {
-      list.innerHTML = '<div class="empty">Couldn\'t load your list — check your token in ⚙.</div>';
-    }
-  }
-
-  function item(when, what, isToday) {
-    const div = document.createElement('div');
-    div.className = 'item';
-    const w = document.createElement('span');
-    w.className = 'when' + (isToday ? ' today' : '');
-    w.textContent = when;
-    const t = document.createElement('span');
-    t.className = 'what';
-    t.textContent = what;
-    div.append(w, t);
-    return div;
-  }
-
-  // --- Wire up ---
-  $('sendBtn').addEventListener('click', addReminder);
-  $('gearBtn').addEventListener('click', showSetup);
-  $('saveBtn').addEventListener('click', () => {
-    const u = $('inUser').value.trim(), r = $('inRepo').value.trim(), t = $('inToken').value.trim();
-    if (!u || !r || !t) { alert('All three fields are needed.'); return; }
-    store.set(u, r, t);
-    showMain();
+  $('dateChip').addEventListener('click', function(){
+    var dp = $('datePick');
+    dp.classList.remove('hidden');
+    if (dp.showPicker) { try { dp.showPicker(); } catch(e) { dp.focus(); } } else { dp.focus(); }
   });
-  $('reminderText').addEventListener('keydown', (e) => {
+  $('datePick').addEventListener('change', function(){
+    var v = $('datePick').value;
+    if (!v) return;
+    var ta = $('reminderText');
+    ta.value = (ta.value.replace(/\s+(tomorrow|next week|on \d{4}-\d{2}-\d{2})\s*$/i,'').trim() + ' on ' + v).trim();
+    clearChips();
+    $('dateChip').classList.add('picked');
+    $('dateChip').textContent = new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'}).format(new Date(v)).toLowerCase();
+    $('datePick').classList.add('hidden');
+    ta.focus();
+  });
+
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) {
+    $('micBtn').classList.remove('hidden');
+    var rec = null;
+    $('micBtn').addEventListener('click', function(){
+      if (rec) { rec.stop(); return; }
+      rec = new SR(); rec.lang = 'en-GB'; rec.interimResults = false;
+      $('micBtn').classList.add('listening');
+      rec.onresult = function(e){ var ta = $('reminderText'); ta.value = (ta.value + ' ' + e.results[0][0].transcript).trim(); };
+      rec.onend = function(){ $('micBtn').classList.remove('listening'); rec = null; };
+      rec.onerror = function(){ setMood('hmm'); toast("i didn't catch that - try again?", 'err'); };
+      rec.start();
+    });
+  }
+
+  (function(){
+    var q = new URLSearchParams(location.search);
+    var shared = [q.get('title'), q.get('text'), q.get('url')].filter(Boolean).join(' ').trim();
+    if (shared) {
+      $('reminderText').value = shared;
+      history.replaceState(null, '', location.pathname);
+      setTimeout(function(){ $('reminderText').focus(); }, 300);
+      toast("ooh, what's this? add a date if it needs one", 'ok');
+    } else if (q.get('compose')) {
+      history.replaceState(null, '', location.pathname);
+      setTimeout(function(){ $('reminderText').focus(); }, 300);
+    }
+  })();
+
+  $('sendBtn').addEventListener('click', addReminder);
+  $('refreshBtn').addEventListener('click', loadList);
+  $('gearBtn').addEventListener('click', showSetup);
+  $('saveBtn').addEventListener('click', function(){
+    var u = $('inUser').value.trim(), r = $('inRepo').value.trim(), t = $('inToken').value.trim();
+    if (!u || !r || !t) { alert('poko needs all three!'); return; }
+    store.set(u,r,t); showMain();
+  });
+  $('reminderText').addEventListener('keydown', function(e){
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addReminder(); }
   });
 
-  const cfg = store.get();
-  (cfg.user && cfg.token) ? showMain() : showSetup();
+  var c = store.get();
+  if (c.user && c.token) showMain(); else showSetup();
 </script>
 </body>
 </html>
