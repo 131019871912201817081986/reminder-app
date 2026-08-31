@@ -1,157 +1,567 @@
-name: Add Reminder from Issue
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FFF6EC">
+<title>poko</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream:#FFF6EC; --paper:#FFFFFF; --cocoa:#4A3B3E; --dusty:#A08A8E;
+    --faint:#C9B4B9; --edge:#F1DFD2; --yel:#FFD971; --yel-bg:#FFF1C9; --yel-ink:#6B4E13;
+    --pink:#FFE3EC; --pink-edge:#F6BCCB; --pink-ink:#B26478;
+    --mint:#DDF3E4; --mint-edge:#A9DDBB; --mint-ink:#2E6B44;
+    --sky:#E4EFFA; --sky-edge:#B7D5EE; --sky-ink:#3D6C96;
+    --lilac:#F3ECFB; --lilac-ink:#7A5AA8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --cream:#241C25; --paper:#302433; --cocoa:#FBEEF2; --dusty:#B69EAA;
+      --faint:#8C7683; --edge:#453247; --yel-bg:#4A3A1E; --yel-ink:#FFE1A0;
+      --pink:#4A2839; --pink-edge:#7A4159; --pink-ink:#FFC4D8;
+      --mint:#21402F; --mint-edge:#3E6B4F; --mint-ink:#A9E7C1;
+      --sky:#23384D; --sky-edge:#3E5E7C; --sky-ink:#B4D8F3;
+      --lilac:#3A2C4C; --lilac-ink:#D5BEF5;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Baloo 2',system-ui,sans-serif; background:var(--cream); color:var(--cocoa); min-height:100dvh; font-weight:600; }
+  .app { max-width:470px; margin:0 auto; padding:0 16px calc(26px + env(safe-area-inset-bottom)); }
+  header { padding:18px 2px 12px; display:flex; align-items:center; justify-content:space-between; }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .brand h1 { font-size:24px; font-weight:800; line-height:1; }
+  .brand p { font-size:12.5px; color:var(--dusty); margin-top:1px; }
+  #poko { transform-origin:60px 16px; }
+  #poko.wave { animation:wave 2.6s ease-in-out infinite; }
+  #poko.ringing { animation:ring .7s ease-in-out infinite; }
+  #poko.pop { animation:pop .5s ease; }
+  @keyframes wave { 0%,88%,100%{transform:rotate(0)} 92%{transform:rotate(-7deg)} 96%{transform:rotate(7deg)} }
+  @keyframes ring { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }
+  @keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.22)} 100%{transform:scale(1)} }
+  .blink { animation:blink 5.5s infinite; }
+  @keyframes blink { 0%,95.5%,100%{transform:scaleY(1)} 97.5%{transform:scaleY(.08)} }
+  @media (prefers-reduced-motion: reduce) { #poko,.blink{animation:none!important} }
+  .iconbtn { width:38px; height:38px; border-radius:50%; background:var(--paper); border:2.5px solid var(--edge); color:var(--dusty); font-size:16px; cursor:pointer; display:grid; place-items:center; font-family:inherit; }
+  .header-actions { display:flex; gap:7px; }
+  :is(button,input,textarea,select):focus-visible { outline:3px solid var(--yel); outline-offset:2px; }
 
-on:
-  issues:
-    types: [opened]
+  .streak { background:var(--yel-bg); border:2.5px solid var(--yel); border-radius:18px; padding:8px 13px; margin-bottom:12px; font-size:13px; font-weight:700; color:var(--yel-ink); display:none; }
+  .streak.on { display:block; }
 
-permissions:
-  contents: write
-  issues: write
+  .composer { background:var(--pink); border:2.5px solid var(--pink-edge); border-radius:28px; border-bottom-left-radius:10px; padding:15px; }
+  .composer > label { display:block; font-size:14px; font-weight:700; color:var(--pink-ink); margin-bottom:9px; }
+  .inputrow { position:relative; }
+  .composer textarea { width:100%; border:none; resize:none; background:var(--paper); color:var(--cocoa); border-radius:18px; padding:12px 46px 12px 13px; font:inherit; font-size:15px; min-height:62px; }
+  .composer textarea::placeholder { color:var(--faint); }
+  .mic { position:absolute; right:7px; top:7px; width:34px; height:34px; border:none; border-radius:50%; background:transparent; color:var(--pink-ink); font-size:17px; cursor:pointer; font-family:inherit; }
+  .mic.listening { background:#E2574C; color:#fff; }
+  .chips { display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; align-items:center; }
+  .chip { background:var(--paper); border:2.5px solid var(--pink-edge); color:var(--pink-ink); border-radius:999px; padding:5px 12px; font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; }
+  .chip.picked { background:var(--yel); border-color:var(--yel); color:var(--yel-ink); }
+  .composer-row { display:flex; justify-content:space-between; align-items:center; margin-top:9px; gap:8px; }
+  .slotpick { display:flex; gap:5px; }
+  .slot { background:var(--paper); border:2.5px solid var(--pink-edge); color:var(--pink-ink); border-radius:999px; padding:4px 10px; font:inherit; font-size:11.5px; font-weight:700; cursor:pointer; }
+  .slot.on { background:var(--pink-ink); border-color:var(--pink-ink); color:var(--pink); }
+  .send { border:none; background:var(--cocoa); color:var(--cream); border-radius:999px; padding:9px 20px; font:inherit; font-size:15px; font-weight:800; cursor:pointer; transition:transform .12s ease; }
+  .send:active { transform:scale(.95); }
+  .send:disabled { opacity:.55; }
 
-jobs:
-  add-reminder:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  .toast { margin-top:11px; border-radius:16px; padding:10px 13px; font-size:13.5px; font-weight:700; display:none; align-items:center; justify-content:space-between; gap:10px; }
+  .toast.ok { display:flex; background:var(--mint); border:2.5px solid var(--mint-edge); color:var(--mint-ink); }
+  .toast.err { display:flex; background:var(--sky); border:2.5px solid var(--sky-edge); color:var(--sky-ink); }
+  .undo { border:2.5px solid currentColor; background:transparent; color:inherit; border-radius:999px; padding:3px 12px; font:inherit; font-size:12px; font-weight:800; cursor:pointer; flex-shrink:0; }
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+  .filters { display:flex; gap:6px; flex-wrap:wrap; margin-top:16px; }
+  .fchip { background:var(--paper); border:2.5px solid var(--edge); color:var(--dusty); border-radius:999px; padding:4px 11px; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+  .fchip.on { background:var(--cocoa); border-color:var(--cocoa); color:var(--cream); }
 
-      - name: Install date understanding
-        run: pip install dateparser
+  .section { margin-top:16px; }
+  .section h2 { font-size:15px; font-weight:800; margin-bottom:8px; }
+  .item { background:var(--paper); border:2.5px solid var(--edge); border-radius:22px; border-top-right-radius:10px; padding:9px 11px; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .item.hot { background:var(--yel-bg); border-color:var(--yel); }
+  .item.ticked { opacity:.55; }
+  .item.ticked .what { text-decoration:line-through; }
+  .tick { width:28px; height:28px; flex-shrink:0; border-radius:50%; border:2.5px solid var(--edge); background:var(--paper); cursor:pointer; font-size:14px; font-family:inherit; color:var(--mint-ink); display:grid; place-items:center; padding:0; }
+  .tick.on { background:var(--mint); border-color:var(--mint-edge); }
+  .badge { flex-shrink:0; border-radius:999px; padding:4px 9px; font-size:11.5px; font-weight:800; white-space:nowrap; }
+  .b-today { background:var(--yel); color:var(--yel-ink); }
+  .b-soon { background:var(--sky); color:var(--sky-ink); }
+  .b-rep { background:var(--pink); color:var(--pink-ink); }
+  .what { flex:1; font-size:14.5px; overflow-wrap:anywhere; line-height:1.25; }
+  .meta { display:block; font-size:11.5px; font-weight:700; color:var(--dusty); margin-top:1px; }
+  .cat { display:inline-block; border-radius:999px; padding:1px 8px; font-size:11px; font-weight:800; margin-left:4px; }
+  .tool { flex-shrink:0; width:28px; height:28px; padding:0; border:2.5px solid var(--edge); background:var(--paper); border-radius:50%; font:inherit; font-size:13px; cursor:pointer; color:var(--dusty); display:grid; place-items:center; }
+  .tool.del { color:#D88B8B; }
+  .nap { text-align:center; padding:22px 12px; color:var(--dusty); font-size:13.5px; }
 
-      - name: Understand the reminder
-        env:
-          TITLE: ${{ github.event.issue.title }}
-        run: |
-          python3 - <<'EOF'
-          import os, re
-          from datetime import date
-          from dateparser.search import search_dates
+  .setup { background:var(--paper); border:2.5px solid var(--edge); border-radius:26px; padding:18px; margin-top:6px; }
+  .setup h2 { font-size:17px; font-weight:800; margin-bottom:5px; }
+  .setup p { color:var(--dusty); font-size:13px; margin-bottom:14px; }
+  .field { margin-bottom:11px; }
+  .field label { display:block; font-size:13px; font-weight:700; color:var(--dusty); margin-bottom:5px; }
+  .field input { width:100%; border:2.5px solid var(--edge); border-radius:14px; padding:10px 12px; font:inherit; font-size:14px; background:var(--cream); color:var(--cocoa); }
+  .save { width:100%; border:none; background:var(--cocoa); color:var(--cream); border-radius:999px; padding:12px; font:inherit; font-size:15px; font-weight:800; cursor:pointer; margin-top:3px; }
+  .foot { text-align:center; margin-top:16px; font-size:11.5px; color:var(--faint); font-weight:700; line-height:1.6; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <svg id="poko" width="46" height="46" viewBox="0 0 120 120" role="img" aria-label="Poko"></svg>
+      <div>
+        <h1>poko</h1>
+        <p id="pokoLine">remembers so you don't have to</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="iconbtn" id="refreshBtn" aria-label="Refresh">&#8635;</button>
+      <button class="iconbtn" id="gearBtn" aria-label="Settings">&#9881;</button>
+    </div>
+  </header>
 
-          DAYS = {"monday":"mon","tuesday":"tue","wednesday":"wed","thursday":"thu",
-                  "friday":"fri","saturday":"sat","sunday":"sun"}
-          DAY_FULL = {v: k.capitalize() for k, v in DAYS.items()}
+  <section class="setup hidden" id="setupPanel">
+    <h2>let's get poko connected</h2>
+    <p>these stay on this phone only. your token needs Issues and Contents both set to read &amp; write.</p>
+    <div class="field"><label for="inUser">github username</label><input id="inUser" autocomplete="off" autocapitalize="none"></div>
+    <div class="field"><label for="inRepo">reminder repo</label><input id="inRepo" autocomplete="off" autocapitalize="none" value="WhatsappReminder"></div>
+    <div class="field"><label for="inToken">access token</label><input id="inToken" type="password" autocomplete="off" placeholder="github_pat_..."></div>
+    <button class="save" id="saveBtn">save &amp; connect</button>
+  </section>
 
-          raw = (os.environ.get("TITLE") or "").strip()
+  <main class="hidden" id="mainPanel">
+    <div class="streak" id="streakBox"></div>
+    <section class="composer">
+      <label for="reminderText">what shall i remind you about?</label>
+      <div class="inputrow">
+        <textarea id="reminderText" placeholder="dentist on 12 sept at 2pm #health"></textarea>
+        <button class="mic hidden" id="micBtn" aria-label="Speak">&#127908;</button>
+      </div>
+      <div class="chips">
+        <button class="chip" data-add="tomorrow">tomorrow</button>
+        <button class="chip" data-add="next week">next week</button>
+        <button class="chip" id="dateChip">pick a date</button>
+        <input type="date" id="datePick" class="hidden" aria-label="Pick a date">
+      </div>
+      <div class="chips" id="catChips"></div>
+      <div class="composer-row">
+        <div class="slotpick">
+          <button class="slot on" data-slot="am">morning</button>
+          <button class="slot" data-slot="pm">evening</button>
+          <button class="slot" data-slot="both">both</button>
+        </div>
+        <button class="send" id="sendBtn">add it</button>
+      </div>
+    </section>
+    <div class="toast" id="toast" role="status"></div>
+    <div class="filters" id="filters"></div>
+    <div id="lists"></div>
+    <p class="foot">poko texts you ~9am &middot; nudge ~2pm &middot; heads-up ~6pm &middot; week ahead sundays</p>
+  </main>
+</div>
 
-          cat = None
-          m = re.search(r'#([a-z0-9\-]+)', raw, re.I)
-          if m:
-              cat = m.group(1).lower()
-              raw = raw.replace(m.group(0), " ")
-          slot = "am"
-          m = re.search(r'!(pm|both|am)\b', raw, re.I)
-          if m:
-              slot = m.group(1).lower()
-              raw = raw.replace(m.group(0), " ")
+<script>
+var $=function(i){return document.getElementById(i)};
+var BODY='<path d="M60 20 C38 20 30 38 30 56 L30 72 L22 84 L98 84 L90 72 L90 56 C90 38 82 20 60 20 Z" fill="#FFD971" stroke="#4A3B3E" stroke-width="4" stroke-linejoin="round"/><circle cx="60" cy="16" r="7" fill="#FFD971" stroke="#4A3B3E" stroke-width="4"/><circle cx="60" cy="92" r="8" fill="#FFD971" stroke="#4A3B3E" stroke-width="4"/><circle cx="40" cy="63" r="5" fill="#FFB7C5"/><circle cx="80" cy="63" r="5" fill="#FFB7C5"/>';
+var EYES='<g class="blink" style="transform-origin:60px 55px"><circle cx="49" cy="55" r="4.5" fill="#4A3B3E"/><circle cx="71" cy="55" r="4.5" fill="#4A3B3E"/><circle cx="50.6" cy="53.4" r="1.6" fill="#fff"/><circle cx="72.6" cy="53.4" r="1.6" fill="#fff"/></g>';
+var FACES={
+ hi:BODY+EYES+'<path d="M53 64 Q60 70 67 64" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/>',
+ nap:BODY+'<path d="M43 55 Q49 49 55 55" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M65 55 Q71 49 77 55" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/><ellipse cx="60" cy="67" rx="4" ry="5" fill="#4A3B3E"/>',
+ yay:BODY+'<path d="M43 50 L49 58 L55 50" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M65 50 L71 58 L77 50" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M50 65 Q60 75 70 65 Z" fill="#4A3B3E"/>',
+ hmm:BODY+'<circle cx="49" cy="56" r="4.5" fill="#4A3B3E"/><circle cx="71" cy="56" r="4.5" fill="#4A3B3E"/><path d="M42 46 Q49 43 56 47" stroke="#4A3B3E" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M64 47 Q71 43 78 46" stroke="#4A3B3E" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M53 69 Q60 64 67 69" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/>',
+ ring:BODY+EYES+'<ellipse cx="60" cy="67" rx="7" ry="6" fill="#4A3B3E"/>',
+ proud:BODY+'<path d="M43 52 Q49 46 55 52" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M65 52 Q71 46 77 52" stroke="#4A3B3E" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M50 64 Q60 74 70 64 Z" fill="#4A3B3E"/><path d="M18 30 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 z" fill="#FFD971" stroke="#4A3B3E" stroke-width="2"/><path d="M102 28 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 z" fill="#FFD971" stroke="#4A3B3E" stroke-width="2"/>'
+};
+var LINES={
+ hi:["remembers so you don't have to","at your service","what's on today?"],
+ nap:["zzz... nothing due","having a little nap"],
+ yay:["got it!! noted","consider it remembered"],
+ hmm:["hmm, i'm not sure...","that one confused me"],
+ ring:["something's due today!","ding ding! it's today"],
+ proud:["all done! nice one","you did the things!"]
+};
+function setMood(m){
+  var el=$('poko');
+  el.innerHTML=FACES[m]||FACES.hi;
+  el.className=(m==='ring'?'ringing':(m==='yay'||m==='proud'?'pop':'wave'));
+  var l=LINES[m]||LINES.hi;
+  $('pokoLine').textContent=l[Math.floor(Math.random()*l.length)];
+}
+setMood('hi');
 
-          text = re.sub(r'^\s*remind me\s*(of|about|to|that)?\s*(i have)?\s*', '', raw, flags=re.I)
-          text = re.sub(r'\s+', ' ', text).strip()
+var CATS=['health','house','work','money','fun','admin'];
+var CATCOL={health:['#FFE3EC','#B26478'],house:['#DDF3E4','#2E6B44'],work:['#E4EFFA','#3D6C96'],money:['#FFF1C9','#6B4E13'],fun:['#F3ECFB','#7A5AA8'],admin:['#F1DFD2','#8A6E5E']};
+function catStyle(c){var p=CATCOL[c]||['#F1DFD2','#8A6E5E'];return 'background:'+p[0]+';color:'+p[1];}
 
-          tod = None
-          m = re.search(r'\b(?:at\s+)?(\d{1,2})(?::|\.)?(\d{2})?\s*(am|pm)\b', text, re.I)
-          if m:
-              h = int(m.group(1)) % 12
-              if m.group(3).lower() == "pm": h += 12
-              tod = f"{h:02d}:{int(m.group(2) or 0):02d}"
-              text = (text[:m.start()] + " " + text[m.end():]).strip()
-          else:
-              m = re.search(r'\bat\s+(\d{1,2}):(\d{2})\b', text)
-              if m:
-                  tod = f"{int(m.group(1)):02d}:{m.group(2)}"
-                  text = (text[:m.start()] + " " + text[m.end():]).strip()
-          text = re.sub(r'\s+', ' ', text).strip(" ,.-")
+var store={
+ get:function(){return{user:localStorage.getItem('rm_user')||'',repo:localStorage.getItem('rm_repo')||'WhatsappReminder',token:localStorage.getItem('rm_token')||''}},
+ set:function(u,r,t){localStorage.setItem('rm_user',u);localStorage.setItem('rm_repo',r);localStorage.setItem('rm_token',t)}
+};
+function api(p,o){o=o||{};var c=store.get();
+ return fetch('https://api.github.com/repos/'+c.user+'/'+c.repo+p,{method:o.method,body:o.body,headers:{'Authorization':'Bearer '+c.token,'Accept':'application/vnd.github+json'}});}
 
-          line = note = None
+var undoLine=null,undoIdx=null;
+function toast(msg,kind,withUndo){
+ var t=$('toast');t.innerHTML='';
+ var s=document.createElement('span');s.textContent=msg;t.appendChild(s);
+ if(withUndo){var b=document.createElement('button');b.className='undo';b.textContent='undo';b.onclick=doUndo;t.appendChild(b);}
+ t.className='toast '+kind;clearTimeout(t._t);
+ t._t=setTimeout(function(){t.className='toast';undoLine=null;},8000);
+}
+function showSetup(){var c=store.get();$('inUser').value=c.user;$('inRepo').value=c.repo;$('inToken').value=c.token;$('setupPanel').classList.remove('hidden');$('mainPanel').classList.add('hidden');}
+function showMain(){$('setupPanel').classList.add('hidden');$('mainPanel').classList.remove('hidden');buildCatChips();loadList();}
 
-          m = re.search(r'\b(every\s*day|daily)\b', text, re.I)
-          if m:
-              label = (text[:m.start()] + text[m.end():]).strip(" ,.-") or "Reminder"
-              line = f"EVERY day {label}"
-              note = f"Every day: {label}"
+var pickedSlot='am',pickedCat=null;
+function buildCatChips(){
+ var w=$('catChips');w.innerHTML='';
+ CATS.forEach(function(c){
+  var b=document.createElement('button');b.className='chip';b.textContent='#'+c;
+  b.onclick=function(){
+   if(pickedCat===c){pickedCat=null;b.classList.remove('picked');}
+   else{pickedCat=c;var all=w.querySelectorAll('.chip');for(var i=0;i<all.length;i++)all[i].classList.remove('picked');b.classList.add('picked');}
+  };
+  w.appendChild(b);
+ });
+}
+var slots=document.querySelectorAll('.slot');
+for(var i=0;i<slots.length;i++){(function(b){b.onclick=function(){
+ for(var j=0;j<slots.length;j++)slots[j].classList.remove('on');
+ b.classList.add('on');pickedSlot=b.getAttribute('data-slot');};})(slots[i]);}
 
-          if line is None:
-              found = []
-              low = text.lower()
-              for full, short in DAYS.items():
-                  if re.search(r'\b(every\s+' + full + r's?|' + full + r's)\b', low):
-                      found.append(short)
-              if found:
-                  label = re.sub(r'\b(every|each|on|and)\b', ' ', text, flags=re.I)
-                  for full in DAYS:
-                      label = re.sub(r'\b' + full + r's?\b', ' ', label, flags=re.I)
-                  label = re.sub(r'\s+', ' ', label).strip(" ,.-") or "Reminder"
-                  line = f"EVERY {','.join(found)} {label}"
-                  note = "Every " + ", ".join(DAY_FULL[d] for d in found) + f": {label}"
+function addReminder(){
+ var text=$('reminderText').value.trim();
+ if(!text){setMood('hmm');toast('tell me something first!','err');return;}
+ if(pickedCat)text+=' #'+pickedCat;
+ if(pickedSlot!=='am')text+=' !'+pickedSlot;
+ $('sendBtn').disabled=true;
+ api('/issues',{method:'POST',body:JSON.stringify({title:text})})
+ .then(function(r){if(!r.ok)throw new Error('github said '+r.status);
+  $('reminderText').value='';clearChips();pickedCat=null;buildCatChips();
+  setMood('yay');toast('got it! check whatsapp for my note','ok');
+  setTimeout(loadList,20000);})
+ .catch(function(e){setMood('hmm');toast("couldn't send - check settings ("+e.message+')','err');})
+ .then(function(){$('sendBtn').disabled=false;});
+}
 
-          if line is None:
-              m = re.search(r'\b(every\s+month|monthly)\b(?:\s*(?:on\s+the\s+)?(\d{1,2})(?:st|nd|rd|th)?)?', text, re.I)
-              if m:
-                  dom = max(1, min(int(m.group(2)) if m.group(2) else 1, 28))
-                  label = (text[:m.start()] + text[m.end():]).strip(" ,.-")
-                  label = re.sub(r'\bof\s*$', '', label, flags=re.I).strip(" ,.-") or "Reminder"
-                  line = f"EVERY month:{dom} {label}"
-                  note = f"Monthly on day {dom}: {label}"
+var fileSha=null,rawLines=[],activeFilter=null;
+var TAG=/\s*(@\d{1,2}:\d{2}|#[a-z0-9\-]+|![ap]m|!both|~done:\d{4}-\d{2}-\d{2})\s*/gi;
+function parseLine(line){
+ var t=line.trim();
+ if(!t)return null;
+ if(t.charAt(0)==='#'&&/^#\s|^#\s*poko-streak/i.test(t))return null;
+ var tags={time:null,cat:null,slot:'am',done:null};
+ var body=t.replace(TAG,function(m,v){
+  if(v.charAt(0)==='@')tags.time=v.slice(1);
+  else if(v.charAt(0)==='#')tags.cat=v.slice(1).toLowerCase();
+  else if(v.indexOf('~done:')===0)tags.done=v.slice(6);
+  else tags.slot=v.slice(1).toLowerCase();
+  return ' ';}).trim();
+ var m;
+ if((m=body.match(/^(\d{4})-(\d{2})-(\d{2})\s+(.*)$/)))return{kind:'dated',d:new Date(+m[1],+m[2]-1,+m[3]),text:m[4],time:tags.time,cat:tags.cat,slot:tags.slot,done:tags.done};
+ if((m=body.match(/^EVERY\s+day\s+(.*)$/i)))return{kind:'daily',text:m[1],time:tags.time,cat:tags.cat,slot:tags.slot,done:tags.done};
+ if((m=body.match(/^EVERY\s+month:(\d{1,2})\s+(.*)$/i)))return{kind:'monthly',day:+m[1],text:m[2],time:tags.time,cat:tags.cat,slot:tags.slot,done:tags.done};
+ if((m=body.match(/^EVERY\s+((?:mon|tue|wed|thu|fri|sat|sun)(?:,(?:mon|tue|wed|thu|fri|sat|sun))*)\s+(.*)$/i)))return{kind:'weekly',days:m[1].toLowerCase().split(','),text:m[2],time:tags.time,cat:tags.cat,slot:tags.slot,done:tags.done};
+ return{kind:'daily',text:body,time:tags.time,cat:tags.cat,slot:tags.slot,done:tags.done};
+}
+function isoOf(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function dueToday(p,today){
+ var dow=['sun','mon','tue','wed','thu','fri','sat'][today.getDay()];
+ if(p.kind==='dated')return p.d.getTime()===today.getTime();
+ if(p.kind==='daily')return true;
+ if(p.kind==='monthly')return p.day===today.getDate();
+ if(p.kind==='weekly')return p.days.indexOf(dow)>=0;
+ return false;
+}
 
-          if line is None:
-              settings = {"PREFER_DATES_FROM": "future", "DATE_ORDER": "DMY", "TIMEZONE": "Europe/London"}
-              hit = None
-              try:
-                  found = search_dates(text, languages=["en"], settings=settings)
-              except Exception:
-                  found = None
-              if found:
-                  for ms, dt in found:
-                      ms = ms.strip()
-                      if len(ms) < 5 and not re.search(r'[a-zA-Z]', ms): continue
-                      if dt.date() < date.today(): continue
-                      hit = (ms, dt); break
-              if hit:
-                  ms, dt = hit
-                  label = text.replace(ms, "").strip(" ,.-!")
-                  label = re.sub(r'\b(on|at|the)\s*$', '', label, flags=re.I).strip(" ,.-") or "Reminder"
-                  line = f"{dt.strftime('%Y-%m-%d')} {label}"
-                  note = f"I'll remind you on {dt.strftime('%A %d %B')}: {label}"
+function loadList(){
+ var wrap=$('lists');
+ api('/contents/reminders.txt').then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+ .then(function(data){
+  fileSha=data.sha;
+  rawLines=decodeURIComponent(escape(atob(data.content.replace(/\n/g,'')))).split('\n');
+  render();
+ }).catch(function(){setMood('hmm');wrap.innerHTML='<div class="section"><div class="nap">i can\'t reach your list - check the settings</div></div>';});
+}
 
-          if line is None:
-              line = f"EVERY day {text or 'Reminder'}"
-              note = f"Added as an every-day reminder (no date spotted): {text}"
+function render(){
+ var wrap=$('lists');
+ var today=new Date();today.setHours(0,0,0,0);
+ var iso=isoOf(today);
+ var items=[];
+ rawLines.forEach(function(line,i){var p=parseLine(line);if(!p)return;p.idx=i;items.push(p);});
 
-          if tod:
-              line += " @" + tod
-              note += f" at {tod}"
-          if cat:
-              line += " #" + cat
-              note += f" [{cat}]"
-          if slot != "am":
-              line += " !" + slot
-              note += " (evening)" if slot == "pm" else " (morning + evening)"
+ var hot=[],soon=[],reps=[],daily=[];
+ items.forEach(function(p){
+  if(activeFilter&&p.cat!==activeFilter)return;
+  if(p.kind==='dated'){
+   if(p.d.getTime()===today.getTime())hot.push(p);
+   else if(p.d>today)soon.push(p);
+  } else if(dueToday(p,today))hot.push(p);
+  else if(p.kind==='daily')daily.push(p);
+  else reps.push(p);
+ });
+ soon.sort(function(a,b){return a.d-b.d;});
 
-          with open("reminders.txt", "a") as f:
-              f.write(line + "\n")
-          with open(os.environ["GITHUB_ENV"], "a") as f:
-              f.write(f"NOTE=\u2705 {note}\n")
-          EOF
+ buildFilters(items);
+ wrap.innerHTML='';
+ if(!hot.length&&!soon.length&&!reps.length&&!daily.length){
+  setMood('nap');
+  wrap.innerHTML='<div class="section"><div class="nap">nothing here - tell me something above</div></div>';
+  $('streakBox').className='streak';
+  return;
+ }
+ var undone=hot.filter(function(p){return p.done!==iso;});
+ if(hot.length&&!undone.length)setMood('proud');
+ else if(hot.length)setMood('ring');
+ else setMood('hi');
+ showStreak(hot.length,undone.length);
 
-      - name: Save to the list
-        run: |
-          git config user.name "poko"
-          git config user.email "bot@users.noreply.github.com"
-          git add reminders.txt
-          git commit -m "Add reminder"
-          git pull --rebase origin main || true
-          git push
+ if(hot.length)wrap.appendChild(sec('today!',hot.map(function(p){return row(p,today,true);})));
+ if(soon.length)wrap.appendChild(sec('coming up',soon.map(function(p){return row(p,today,false);})));
+ if(reps.length)wrap.appendChild(sec('on repeat',reps.map(function(p){return row(p,today,false);})));
+ if(daily.length)wrap.appendChild(sec('every day',daily.map(function(p){return row(p,today,false);})));
+}
 
-      - name: Confirm on WhatsApp
-        run: |
-          curl -s -G "https://api.callmebot.com/whatsapp.php" \
-            --data-urlencode "phone=${{ secrets.WHATSAPP_PHONE }}" \
-            --data-urlencode "apikey=${{ secrets.CALLMEBOT_APIKEY }}" \
-            --data-urlencode "text=$NOTE"
+function buildFilters(items){
+ var f=$('filters');f.innerHTML='';
+ var found={};items.forEach(function(p){if(p.cat)found[p.cat]=1;});
+ var keys=Object.keys(found);
+ if(!keys.length)return;
+ var all=document.createElement('button');
+ all.className='fchip'+(activeFilter?'':' on');all.textContent='all';
+ all.onclick=function(){activeFilter=null;render();};
+ f.appendChild(all);
+ keys.forEach(function(c){
+  var b=document.createElement('button');
+  b.className='fchip'+(activeFilter===c?' on':'');b.textContent='#'+c;
+  b.onclick=function(){activeFilter=c;render();};
+  f.appendChild(b);
+ });
+}
 
-      - name: Tidy up
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh issue close ${{ github.event.issue.number }} -c "$NOTE"
+function showStreak(total,undone){
+ var box=$('streakBox');
+ var s=readStreak();
+ var msg='';
+ if(total&&!undone)msg='all done today! '+(s>1?'that\'s '+s+' days in a row':'nice one');
+ else if(s>1)msg=s+' day streak - '+undone+' left today';
+ else if(total)msg=undone+' to do today';
+ if(msg){box.textContent=msg;box.className='streak on';}else box.className='streak';
+}
+function readStreak(){
+ for(var i=0;i<rawLines.length;i++){
+  var m=rawLines[i].match(/^#\s*poko-streak:(\d+):(\d{4}-\d{2}-\d{2})/);
+  if(m){
+   var today=new Date();today.setHours(0,0,0,0);
+   var last=new Date(m[2]+'T00:00:00');
+   var diff=Math.round((today-last)/86400000);
+   if(diff===0||diff===1)return +m[1];
+   return 0;
+  }
+ }
+ return 0;
+}
+function writeStreak(lines){
+ var today=new Date();today.setHours(0,0,0,0);
+ var iso=isoOf(today),n=1,found=-1;
+ for(var i=0;i<lines.length;i++){
+  var m=lines[i].match(/^#\s*poko-streak:(\d+):(\d{4}-\d{2}-\d{2})/);
+  if(m){found=i;
+   var last=new Date(m[2]+'T00:00:00');
+   var diff=Math.round((today-last)/86400000);
+   if(diff===0)n=+m[1];else if(diff===1)n=+m[1]+1;else n=1;
+   break;}
+ }
+ var line='# poko-streak:'+n+':'+iso;
+ if(found>=0)lines[found]=line;else lines.unshift(line);
+ return lines;
+}
+
+function sec(title,nodes){
+ var s=document.createElement('section');s.className='section';
+ var h=document.createElement('h2');h.textContent=title;s.appendChild(h);
+ nodes.forEach(function(n){s.appendChild(n)});return s;
+}
+function row(p,today,isHot){
+ var iso=isoOf(today);
+ var done=(p.done===iso);
+ var div=document.createElement('div');
+ div.className='item'+(isHot?' hot':'')+(done?' ticked':'');
+
+ if(isHot){
+  var tk=document.createElement('button');
+  tk.className='tick'+(done?' on':'');
+  tk.textContent=done?'\u2713':'';
+  tk.setAttribute('aria-label',done?'Mark not done':'Mark done');
+  tk.onclick=function(){toggleDone(p,!done);};
+  div.appendChild(tk);
+ }
+ var b=document.createElement('span');
+ b.className='badge '+(isHot?'b-today':(p.kind==='dated'?'b-soon':'b-rep'));
+ if(p.kind==='dated'){
+  var diff=Math.round((p.d-today)/86400000);
+  b.textContent=isHot?'today!':(diff===1?'tomorrow':(diff<7?'in '+diff+' days':new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'}).format(p.d)));
+ } else if(p.kind==='weekly')b.textContent=p.days.join(', ');
+ else if(p.kind==='monthly')b.textContent='day '+p.day;
+ else b.textContent='daily';
+ div.appendChild(b);
+
+ var t=document.createElement('span');t.className='what';
+ t.appendChild(document.createTextNode(p.text));
+ if(p.cat){var c=document.createElement('span');c.className='cat';c.setAttribute('style',catStyle(p.cat));c.textContent=p.cat;t.appendChild(c);}
+ var bits=[];
+ if(p.time)bits.push(p.time);
+ if(p.kind==='dated'&&!isHot)bits.push(new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'short'}).format(p.d).toLowerCase());
+ if(p.slot==='pm')bits.push('evening');
+ else if(p.slot==='both')bits.push('am + pm');
+ if(bits.length){var mt=document.createElement('small');mt.className='meta';mt.textContent=bits.join(' \u00b7 ');t.appendChild(mt);}
+ div.appendChild(t);
+
+ var ed=document.createElement('button');
+ ed.className='tool';ed.textContent='\u270E';
+ ed.setAttribute('aria-label','Edit');
+ ed.onclick=function(){editItem(p);};
+ div.appendChild(ed);
+
+ var del=document.createElement('button');
+ del.className='tool del';del.textContent='\u2715';
+ del.setAttribute('aria-label','Delete');
+ del.onclick=function(){remove(p);};
+ div.appendChild(del);
+ return div;
+}
+
+function b64(s){return btoa(unescape(encodeURIComponent(s)))}
+function saveLines(lines,msg){
+ return api('/contents/reminders.txt',{method:'PUT',body:JSON.stringify({message:msg,content:b64(lines.join('\n')),sha:fileSha})})
+ .then(function(r){
+  if(r.status===409){loadList();toast('list just changed - try again','err');return false;}
+  if(!r.ok){toast("couldn't save - token needs Contents read & write",'err');return false;}
+  return r.json().then(function(d){fileSha=d.content.sha;rawLines=lines.slice();return true;});
+ });
+}
+function remove(p){
+ undoLine=rawLines[p.idx];undoIdx=p.idx;
+ var lines=rawLines.filter(function(_,i){return i!==p.idx;});
+ saveLines(lines,'Delete reminder').then(function(ok){
+  if(ok){toast('forgotten','ok',true);render();}
+ });
+}
+function doUndo(){
+ if(undoLine===null)return;
+ var lines=rawLines.slice();
+ lines.splice(Math.min(undoIdx,lines.length),0,undoLine);
+ undoLine=null;
+ saveLines(lines,'Undo delete').then(function(ok){
+  if(ok){toast('brought it back','ok');render();}
+ });
+}
+function editItem(p){
+ var cur=p.text+(p.time?' at '+p.time:'');
+ var nu=prompt('edit this reminder:',cur);
+ if(nu===null)return;
+ nu=nu.trim();
+ if(!nu)return;
+ var tags='';
+ var tm=nu.match(/\s+at\s+(\d{1,2}):(\d{2})\s*$/i);
+ var timeTag=p.time;
+ if(tm){timeTag=String(+tm[1]).padStart(2,'0')+':'+tm[2];nu=nu.slice(0,tm.index).trim();}
+ if(timeTag)tags+=' @'+timeTag;
+ if(p.cat)tags+=' #'+p.cat;
+ if(p.slot&&p.slot!=='am')tags+=' !'+p.slot;
+ if(p.done)tags+=' ~done:'+p.done;
+ var prefix='';
+ if(p.kind==='dated')prefix=isoOf(p.d)+' ';
+ else if(p.kind==='daily')prefix='EVERY day ';
+ else if(p.kind==='monthly')prefix='EVERY month:'+p.day+' ';
+ else if(p.kind==='weekly')prefix='EVERY '+p.days.join(',')+' ';
+ var lines=rawLines.slice();
+ lines[p.idx]=prefix+nu+tags;
+ saveLines(lines,'Edit reminder').then(function(ok){if(ok){toast('updated','ok');render();}});
+}
+function toggleDone(p,mark){
+ var today=new Date();today.setHours(0,0,0,0);
+ var iso=isoOf(today);
+ var raw=rawLines[p.idx].replace(/\s*~done:\d{4}-\d{2}-\d{2}/,'');
+ if(mark)raw=raw+' ~done:'+iso;
+ var lines=rawLines.slice();
+ lines[p.idx]=raw;
+ if(mark){
+  var still=false;
+  lines.forEach(function(l,i){
+   var q=parseLine(l);if(!q)return;
+   if(dueToday(q,today)&&q.done!==iso&&i!==p.idx)still=true;
+  });
+  if(!still)lines=writeStreak(lines);
+ }
+ saveLines(lines,mark?'Tick off':'Untick').then(function(ok){if(ok)render();});
+}
+
+function clearChips(){
+ var cs=document.querySelectorAll('.chips .chip');
+ for(var i=0;i<cs.length;i++)cs[i].classList.remove('picked');
+ $('dateChip').textContent='pick a date';
+}
+var addChips=document.querySelectorAll('.chip[data-add]');
+for(var i=0;i<addChips.length;i++){(function(chip){
+ chip.addEventListener('click',function(){
+  var ta=$('reminderText');
+  ta.value=(ta.value.replace(/\s+(tomorrow|next week|on \d{4}-\d{2}-\d{2})\s*$/i,'').trim()+' '+chip.getAttribute('data-add')).trim();
+  var d=document.querySelectorAll('.chip[data-add]');for(var j=0;j<d.length;j++)d[j].classList.remove('picked');
+  $('dateChip').classList.remove('picked');$('dateChip').textContent='pick a date';
+  chip.classList.add('picked');ta.focus();});
+})(addChips[i]);}
+$('dateChip').addEventListener('click',function(){
+ var dp=$('datePick');dp.classList.remove('hidden');
+ if(dp.showPicker){try{dp.showPicker()}catch(e){dp.focus()}}else dp.focus();});
+$('datePick').addEventListener('change',function(){
+ var v=$('datePick').value;if(!v)return;
+ var ta=$('reminderText');
+ ta.value=(ta.value.replace(/\s+(tomorrow|next week|on \d{4}-\d{2}-\d{2})\s*$/i,'').trim()+' on '+v).trim();
+ var d=document.querySelectorAll('.chip[data-add]');for(var j=0;j<d.length;j++)d[j].classList.remove('picked');
+ $('dateChip').classList.add('picked');
+ $('dateChip').textContent=new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'}).format(new Date(v)).toLowerCase();
+ $('datePick').classList.add('hidden');ta.focus();});
+
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(SR){$('micBtn').classList.remove('hidden');var rec=null;
+ $('micBtn').addEventListener('click',function(){
+  if(rec){rec.stop();return;}
+  rec=new SR();rec.lang='en-GB';rec.interimResults=false;
+  $('micBtn').classList.add('listening');
+  rec.onresult=function(e){var ta=$('reminderText');ta.value=(ta.value+' '+e.results[0][0].transcript).trim();};
+  rec.onend=function(){$('micBtn').classList.remove('listening');rec=null;};
+  rec.onerror=function(){setMood('hmm');toast("i didn't catch that - try again?",'err');};
+  rec.start();});}
+
+(function(){
+ var q=new URLSearchParams(location.search);
+ var shared=[q.get('title'),q.get('text'),q.get('url')].filter(Boolean).join(' ').trim();
+ if(shared){$('reminderText').value=shared;history.replaceState(null,'',location.pathname);
+  setTimeout(function(){$('reminderText').focus()},300);
+  toast("ooh, what's this? add a date if it needs one",'ok');}
+ else if(q.get('compose')){history.replaceState(null,'',location.pathname);
+  setTimeout(function(){$('reminderText').focus()},300);}
+})();
+
+$('sendBtn').addEventListener('click',addReminder);
+$('refreshBtn').addEventListener('click',loadList);
+$('gearBtn').addEventListener('click',showSetup);
+$('saveBtn').addEventListener('click',function(){
+ var u=$('inUser').value.trim(),r=$('inRepo').value.trim(),t=$('inToken').value.trim();
+ if(!u||!r||!t){alert('poko needs all three!');return;}
+ store.set(u,r,t);showMain();});
+$('reminderText').addEventListener('keydown',function(e){
+ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addReminder();}});
+
+var c=store.get();
+if(c.user&&c.token)showMain();else showSetup();
+</script>
+</body>
+</html>
