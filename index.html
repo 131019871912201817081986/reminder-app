@@ -132,8 +132,34 @@
   .field label { display:block; font-size:13px; font-weight:700; color:var(--dusty); margin-bottom:5px; }
   .field input { width:100%; border:2.5px solid var(--edge); border-radius:14px; padding:10px 12px; font:inherit; font-size:14px; background:var(--cream); color:var(--cocoa); }
   .save { width:100%; border:none; background:var(--cocoa); color:var(--cream); border-radius:999px; padding:12px; font:inherit; font-size:15px; font-weight:800; cursor:pointer; margin-top:3px; }
+  .grouplbl { font-size:11.5px; font-weight:800; color:var(--pink-ink); opacity:.75; margin:13px 0 6px; letter-spacing:.02em; }
+  .chip.newcat { border-style:dashed; }
+  .cal { }
+  .calhead { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .calhead b { font-size:16px; font-weight:800; }
+  .calnav { width:36px; height:36px; border-radius:50%; border:2.5px solid var(--edge); background:var(--paper); color:var(--dusty); font:inherit; font-size:15px; font-weight:800; cursor:pointer; }
+  .calgrid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .caldow { text-align:center; font-size:11px; font-weight:800; color:var(--dusty); padding:3px 0; }
+  .calday { aspect-ratio:1; border:none; background:transparent; border-radius:50%; font:inherit; font-size:14px; font-weight:700; color:var(--cocoa); cursor:pointer; display:grid; place-items:center; }
+  .calday:disabled { color:var(--faint); opacity:.45; cursor:default; }
+  .calday.today { border:2.5px dashed var(--yel); }
+  .calday.pick { background:var(--yel); color:var(--yel-ink); font-weight:800; }
+  .calquick { display:flex; gap:7px; margin-top:14px; flex-wrap:wrap; }
   .foot { text-align:center; margin:10px 0 4px; font-size:11.5px; color:var(--faint); font-weight:700; }
   .hidden { display:none !important; }
+
+  .sheetbg { position:fixed; inset:0; background:rgba(74,59,62,.45); display:none; align-items:flex-end; justify-content:center; z-index:50; }
+  .sheetbg.on { display:flex; }
+  .sheet { background:var(--paper); width:100%; max-width:470px; border-radius:28px 28px 0 0; border:3px solid var(--edge); border-bottom:none; padding:18px 18px calc(18px + env(safe-area-inset-bottom)); animation:up .22s ease; }
+  @keyframes up { from{transform:translateY(40px);opacity:.4} to{transform:translateY(0);opacity:1} }
+  .sheet h3 { font-size:16px; font-weight:800; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .sheet input { width:100%; border:2.5px solid var(--edge); border-radius:16px; padding:12px 13px; font:inherit; font-size:15px; font-weight:600; background:var(--cream); color:var(--cocoa); }
+  .sheet .lbl { font-size:12px; font-weight:700; color:var(--dusty); margin:12px 0 5px; }
+  .sheetrow { display:flex; gap:9px; margin-top:16px; }
+  .sheetrow button { flex:1; border-radius:999px; padding:12px; font:inherit; font-size:15px; font-weight:800; cursor:pointer; border:2.5px solid var(--edge); background:var(--paper); color:var(--dusty); }
+  .sheetrow button.go { background:var(--cocoa); border-color:var(--cocoa); color:var(--cream); }
+  .spark { position:absolute; pointer-events:none; font-size:15px; animation:sparkup .8s ease-out forwards; }
+  @keyframes sparkup { 0%{transform:translateY(0) scale(.5);opacity:1} 100%{transform:translateY(-34px) scale(1.25);opacity:0} }
 </style>
 </head>
 <body>
@@ -178,17 +204,20 @@
         <textarea id="reminderText" placeholder="dentist on 12 sept at 2pm #health"></textarea>
         <button class="mic hidden" id="micBtn" aria-label="Speak">&#127908;</button>
       </div>
+      <div class="grouplbl">when?</div>
       <div class="chips">
+        <button class="chip" data-add="today">today</button>
         <button class="chip" data-add="tomorrow">tomorrow</button>
         <button class="chip" data-add="next week">next week</button>
-        <button class="chip" id="dateChip">pick a date</button>
-        <input type="date" id="datePick" class="hidden" aria-label="Pick a date">
+        <button class="chip" id="dateChip">&#128197; pick a date</button>
       </div>
+      <div class="grouplbl">tag it</div>
       <div class="chips" id="catChips"></div>
+      <div class="grouplbl">when should i text you?</div>
       <div class="composer-row">
         <div class="slotpick">
-          <button class="slot on" data-slot="am">morning</button>
-          <button class="slot" data-slot="pm">evening</button>
+          <button class="slot on" data-slot="am">&#127749; morning</button>
+          <button class="slot" data-slot="pm">&#127769; evening</button>
           <button class="slot" data-slot="both">both</button>
         </div>
         <button class="send" id="sendBtn">add it</button>
@@ -199,8 +228,51 @@
     <div id="lists"></div>
 
     <div class="scene" id="scene"><div class="fg" id="sceneFx"></div><div id="sceneP"></div></div>
-    <p class="foot">poko texts you ~9am &middot; ~2pm &middot; ~6pm</p>
+    <p class="foot">poko texts you ~9am &middot; ~2pm &middot; ~6pm &nbsp;&middot;&nbsp; v3.2</p>
   </main>
+</div>
+
+<div class="sheetbg" id="calbg">
+  <div class="sheet">
+    <div class="calhead">
+      <button class="calnav" id="calPrev" aria-label="Previous month">&#8249;</button>
+      <b id="calTitle"></b>
+      <button class="calnav" id="calNext" aria-label="Next month">&#8250;</button>
+    </div>
+    <div class="calgrid" id="calGrid"></div>
+    <div class="calquick">
+      <button class="chip" data-cal="0">today</button>
+      <button class="chip" data-cal="1">tomorrow</button>
+      <button class="chip" data-cal="7">in a week</button>
+    </div>
+    <div class="sheetrow"><button id="calCancel">cancel</button></div>
+  </div>
+</div>
+
+<div class="sheetbg" id="catbg">
+  <div class="sheet">
+    <h3>new tag</h3>
+    <input id="catName" autocomplete="off" placeholder="e.g. garden" maxlength="16">
+    <div class="lbl">pick an emoji</div>
+    <div class="chips" id="catEmojis"></div>
+    <div class="sheetrow">
+      <button id="catCancel">cancel</button>
+      <button class="go" id="catSave">add tag</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheetbg" id="sheetbg">
+  <div class="sheet">
+    <h3>edit reminder</h3>
+    <input id="edText" autocomplete="off" placeholder="what is it?">
+    <div class="lbl">time (optional)</div>
+    <input id="edTime" type="time">
+    <div class="sheetrow">
+      <button id="edCancel">cancel</button>
+      <button class="go" id="edSave">save</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -338,9 +410,31 @@ function confetti(){
  }
 }
 
-var CATS=['health','house','work','money','fun','admin'];
+var CATDEF=[['health','\uD83D\uDC8A'],['house','\uD83C\uDFE0'],['work','\uD83D\uDCBC'],['money','\uD83D\uDCB0'],['fun','\uD83C\uDF89'],['admin','\uD83D\uDCCB']];
+var EMOJIS=['\uD83C\uDF31','\uD83D\uDC36','\uD83D\uDE97','\uD83C\uDFB5','\uD83D\uDCDA','\u2615','\uD83C\uDFC3','\uD83D\uDECD','\u2708\uFE0F','\uD83C\uDF82','\uD83D\uDD27','\u2764\uFE0F'];
+function loadCats(){
+ var extra=[];
+ try{ extra=JSON.parse(localStorage.getItem('poko_cats')||'[]'); }catch(e){ extra=[]; }
+ return CATDEF.concat(extra);
+}
+function saveCat(name,emoji){
+ var extra=[];
+ try{ extra=JSON.parse(localStorage.getItem('poko_cats')||'[]'); }catch(e){}
+ extra.push([name,emoji]);
+ localStorage.setItem('poko_cats',JSON.stringify(extra));
+}
+function emojiFor(c){
+ var all=loadCats();
+ for(var i=0;i<all.length;i++) if(all[i][0]===c) return all[i][1];
+ return '\uD83C\uDFF7';
+}
 var CATCOL={health:['#FFE3EC','#B26478'],house:['#DDF3E4','#2E6B44'],work:['#E4EFFA','#3D6C96'],money:['#FFF1C9','#6B4E13'],fun:['#F3ECFB','#7A5AA8'],admin:['#F1DFD2','#8A6E5E']};
-function catStyle(c){var p=CATCOL[c]||['#F1DFD2','#8A6E5E'];return 'background:'+p[0]+';color:'+p[1];}
+var SPARE=[['#FFE3EC','#B26478'],['#DDF3E4','#2E6B44'],['#E4EFFA','#3D6C96'],['#FFF1C9','#6B4E13'],['#F3ECFB','#7A5AA8']];
+function catStyle(c){
+ var p=CATCOL[c];
+ if(!p){var h=0;for(var i=0;i<c.length;i++)h=(h*31+c.charCodeAt(i))%SPARE.length;p=SPARE[h];}
+ return 'background:'+p[0]+';color:'+p[1];
+}
 
 var store={
  get:function(){return{user:localStorage.getItem('rm_user')||'',repo:localStorage.getItem('rm_repo')||'WhatsappReminder',token:localStorage.getItem('rm_token')||''}},
@@ -363,15 +457,54 @@ function showMain(){$('setupPanel').classList.add('hidden');$('mainPanel').class
 var pickedSlot='am',pickedCat=null;
 function buildCatChips(){
  var w=$('catChips');w.innerHTML='';
- CATS.forEach(function(c){
-  var b=document.createElement('button');b.className='chip';b.textContent='#'+c;
+ loadCats().forEach(function(pair){
+  var c=pair[0];
+  var b=document.createElement('button');b.className='chip';
+  b.textContent=pair[1]+' '+c;
+  if(pickedCat===c)b.classList.add('picked');
   b.onclick=function(){
-   if(pickedCat===c){pickedCat=null;b.classList.remove('picked');}
-   else{pickedCat=c;var all=w.querySelectorAll('.chip');for(var i=0;i<all.length;i++)all[i].classList.remove('picked');b.classList.add('picked');}
+   var all=w.querySelectorAll('.chip');
+   for(var i=0;i<all.length;i++)all[i].classList.remove('picked');
+   if(pickedCat===c){pickedCat=null;}
+   else{pickedCat=c;b.classList.add('picked');}
   };
   w.appendChild(b);
  });
+ var nb=document.createElement('button');
+ nb.className='chip newcat';nb.textContent='+ new';
+ nb.onclick=openCatSheet;
+ w.appendChild(nb);
 }
+var pickedEmoji=EMOJIS[0];
+function openCatSheet(){
+ $('catName').value='';
+ pickedEmoji=EMOJIS[0];
+ var w=$('catEmojis');w.innerHTML='';
+ EMOJIS.forEach(function(e,i){
+  var b=document.createElement('button');b.className='chip'+(i===0?' picked':'');
+  b.textContent=e;
+  b.onclick=function(){
+   var all=w.querySelectorAll('.chip');
+   for(var j=0;j<all.length;j++)all[j].classList.remove('picked');
+   b.classList.add('picked');pickedEmoji=e;
+  };
+  w.appendChild(b);
+ });
+ $('catbg').className='sheetbg on';
+ setTimeout(function(){$('catName').focus()},120);
+}
+$('catCancel').addEventListener('click',function(){$('catbg').className='sheetbg';});
+$('catbg').addEventListener('click',function(e){if(e.target===$('catbg'))$('catbg').className='sheetbg';});
+$('catSave').addEventListener('click',function(){
+ var n=$('catName').value.toLowerCase().replace(/[^a-z0-9\- ]/g,'').trim().replace(/\s+/g,'-');
+ if(!n){toast('give the tag a name','err');return;}
+ var exists=loadCats().some(function(p){return p[0]===n;});
+ if(!exists)saveCat(n,pickedEmoji);
+ pickedCat=n;
+ $('catbg').className='sheetbg';
+ buildCatChips();
+ toast('added #'+n,'ok');
+});
 var slots=document.querySelectorAll('.slot');
 for(var i=0;i<slots.length;i++){(function(b){b.onclick=function(){
  for(var j=0;j<slots.length;j++)slots[j].classList.remove('on');
@@ -557,14 +690,14 @@ function row(p,today,isHot){
  div.className='item'+(isHot?' hot':'')+(done?' ticked':'');
 
  if(isHot){
-  div.onclick=function(){toggleDone(p,!done);};
-  var tw=document.createElement('span');tw.className='tickwrap';
+  div.addEventListener('click',function(e){ toggleDone(p,!done,div); });
+  var tw=document.createElement('button');tw.className='tickwrap';
+  tw.setAttribute('aria-label',(done?'untick ':'tick off ')+p.text);
+  tw.style.border='none';tw.style.background='transparent';
+  tw.addEventListener('click',function(e){ e.stopPropagation(); toggleDone(p,!done,div); });
   var tk=document.createElement('span');
   tk.className='tick'+(done?' on':'');
   tk.textContent=done?'\u2713':'';
-  tk.setAttribute('role','checkbox');
-  tk.setAttribute('aria-checked',done?'true':'false');
-  tk.setAttribute('aria-label',p.text);
   tw.appendChild(tk);div.appendChild(tw);
  }
  var b=document.createElement('span');
@@ -627,16 +760,26 @@ function doUndo(){
   if(ok){toast('brought it back','ok');render();}
  });
 }
+var editing=null;
 function editItem(p){
- var cur=p.text+(p.time?' at '+p.time:'');
- var nu=prompt('edit this reminder:',cur);
- if(nu===null)return;
- nu=nu.trim();
- if(!nu)return;
+ editing=p;
+ $('edText').value=p.text;
+ $('edTime').value=p.time||'';
+ $('sheetbg').className='sheetbg on';
+ setTimeout(function(){$('edText').focus()},120);
+}
+function closeSheet(){ $('sheetbg').className='sheetbg'; editing=null; }
+$('edCancel').addEventListener('click',closeSheet);
+$('sheetbg').addEventListener('click',function(e){ if(e.target===$('sheetbg'))closeSheet(); });
+$('edSave').addEventListener('click',function(){
+ if(!editing)return;
+ var p=editing, nu=$('edText').value.trim(), tm=$('edTime').value;
+ if(!nu){toast('give it some words first','err');return;}
+ closeSheet();
+ applyEdit(p,nu,tm||null);
+});
+function applyEdit(p,nu,timeTag){
  var tags='';
- var tm=nu.match(/\s+at\s+(\d{1,2}):(\d{2})\s*$/i);
- var timeTag=p.time;
- if(tm){timeTag=String(+tm[1]).padStart(2,'0')+':'+tm[2];nu=nu.slice(0,tm.index).trim();}
  if(timeTag)tags+=' @'+timeTag;
  if(p.cat)tags+=' #'+p.cat;
  if(p.slot&&p.slot!=='am')tags+=' !'+p.slot;
@@ -650,8 +793,38 @@ function editItem(p){
  lines[p.idx]=prefix+nu+tags;
  saveLines(lines,'Edit reminder').then(function(ok){if(ok){toast('updated','ok');render();}});
 }
-function toggleDone(p,mark){
+var TICKSAY=['nice one!','done!','tick!','get in','lovely stuff','one down'];
+function sparkAt(el){
+ if(!el)return;
+ var s=document.createElement('span');
+ s.className='spark';s.textContent='\u2728';
+ var r=el.getBoundingClientRect();
+ s.style.position='fixed';
+ s.style.left=(r.left+22)+'px';
+ s.style.top=(r.top+6)+'px';
+ s.style.zIndex='40';
+ document.body.appendChild(s);
+ setTimeout(function(){s.remove()},850);
+}
+function pokoReact(){
+ var el=$('poko');
+ el.className='jump';
+ $('pokoLine').textContent=TICKSAY[Math.floor(Math.random()*TICKSAY.length)];
+ setTimeout(function(){ el.className=(mood==='ring'?'ringing':'wave'); },560);
+ var sp=$('sceneP').firstChild;
+ if(sp){sp.style.animation='jump .55s ease';setTimeout(function(){sp.style.animation='';},600);}
+}
+function toggleDone(p,mark,rowEl){
  localStorage.setItem('poko_tickhint','1');
+ if(rowEl&&rowEl.dataset.busy==='1')return;
+ if(rowEl){
+  rowEl.dataset.busy='1';
+  rowEl.className='item hot'+(mark?' ticked':'');
+  var tk=rowEl.querySelector('.tick');
+  if(tk){tk.className='tick'+(mark?' on':'');tk.textContent=mark?'\u2713':'';}
+ }
+ if(mark){ pokoReact(); sparkAt(rowEl); }
+
  var today=new Date();today.setHours(0,0,0,0);
  var iso=isoOf(today);
  var raw=rawLines[p.idx].replace(/\s*~done:\d{4}-\d{2}-\d{2}/,'');
@@ -668,35 +841,83 @@ function toggleDone(p,mark){
   if(!still){lines=writeStreak(lines);allDone=true;}
  }
  saveLines(lines,mark?'Tick off':'Untick').then(function(ok){
+  if(rowEl)rowEl.dataset.busy='';
   if(ok){render();if(allDone){confetti();toast('everything done today - go you!','ok');}}
+  else render();
  });
 }
 
 function clearChips(){
  var cs=document.querySelectorAll('.chips .chip');
  for(var i=0;i<cs.length;i++)cs[i].classList.remove('picked');
- $('dateChip').textContent='pick a date';
+ $('dateChip').textContent='\uD83D\uDCC5 pick a date';calPick=null;
 }
 var addChips=document.querySelectorAll('.chip[data-add]');
 for(var i=0;i<addChips.length;i++){(function(chip){
  chip.addEventListener('click',function(){
   var ta=$('reminderText');
-  ta.value=(ta.value.replace(/\s+(tomorrow|next week|on \d{4}-\d{2}-\d{2})\s*$/i,'').trim()+' '+chip.getAttribute('data-add')).trim();
+  ta.value=(ta.value.replace(/(^|\s+)(today|tomorrow|next week|on \d{4}-\d{2}-\d{2})\s*$/i,'').trim()+' '+chip.getAttribute('data-add')).trim();
   var d=document.querySelectorAll('.chip[data-add]');for(var j=0;j<d.length;j++)d[j].classList.remove('picked');
-  $('dateChip').classList.remove('picked');$('dateChip').textContent='pick a date';
+  $('dateChip').classList.remove('picked');$('dateChip').textContent='\uD83D\uDCC5 pick a date';calPick=null;
   chip.classList.add('picked');ta.focus();});
 })(addChips[i]);}
-$('dateChip').addEventListener('click',function(){
- var dp=$('datePick');dp.classList.remove('hidden');
- if(dp.showPicker){try{dp.showPicker()}catch(e){dp.focus()}}else dp.focus();});
-$('datePick').addEventListener('change',function(){
- var v=$('datePick').value;if(!v)return;
+var calY,calM,calPick=null;
+function openCal(){
+ var d=new Date();
+ calY=d.getFullYear();calM=d.getMonth();
+ renderCal();
+ $('calbg').className='sheetbg on';
+}
+function renderCal(){
+ var MN=['january','february','march','april','may','june','july','august','september','october','november','december'];
+ $('calTitle').textContent=MN[calM]+' '+calY;
+ var g=$('calGrid');g.innerHTML='';
+ ['m','t','w','t','f','s','s'].forEach(function(d){
+  var e=document.createElement('div');e.className='caldow';e.textContent=d;g.appendChild(e);
+ });
+ var first=new Date(calY,calM,1);
+ var start=(first.getDay()+6)%7;
+ var days=new Date(calY,calM+1,0).getDate();
+ var today=new Date();today.setHours(0,0,0,0);
+ for(var i=0;i<start;i++)g.appendChild(document.createElement('div'));
+ for(var d=1;d<=days;d++){
+  (function(day){
+   var cell=new Date(calY,calM,day);
+   var b=document.createElement('button');
+   b.className='calday';b.textContent=day;
+   if(cell.getTime()===today.getTime())b.classList.add('today');
+   if(calPick&&cell.getTime()===calPick.getTime())b.classList.add('pick');
+   if(cell<today){b.disabled=true;}
+   else b.onclick=function(){ chooseDate(cell); };
+   g.appendChild(b);
+  })(d);
+ }
+}
+function chooseDate(d){
+ calPick=d;
+ var iso=isoOf(d);
  var ta=$('reminderText');
- ta.value=(ta.value.replace(/\s+(tomorrow|next week|on \d{4}-\d{2}-\d{2})\s*$/i,'').trim()+' on '+v).trim();
- var d=document.querySelectorAll('.chip[data-add]');for(var j=0;j<d.length;j++)d[j].classList.remove('picked');
+ ta.value=(ta.value.replace(/(^|\s+)(today|tomorrow|next week|on \d{4}-\d{2}-\d{2})\s*$/i,'').trim()+' on '+iso).trim();
+ var chips=document.querySelectorAll('.chip[data-add]');
+ for(var j=0;j<chips.length;j++)chips[j].classList.remove('picked');
  $('dateChip').classList.add('picked');
- $('dateChip').textContent=new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'}).format(new Date(v)).toLowerCase();
- $('datePick').classList.add('hidden');ta.focus();});
+ $('dateChip').textContent='\uD83D\uDCC5 '+new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'}).format(d).toLowerCase();
+ $('calbg').className='sheetbg';
+ ta.focus();
+}
+$('calPrev').addEventListener('click',function(){ calM--; if(calM<0){calM=11;calY--;} renderCal(); });
+$('calNext').addEventListener('click',function(){ calM++; if(calM>11){calM=0;calY++;} renderCal(); });
+$('calCancel').addEventListener('click',function(){ $('calbg').className='sheetbg'; });
+$('calbg').addEventListener('click',function(e){ if(e.target===$('calbg'))$('calbg').className='sheetbg'; });
+var calQuick=document.querySelectorAll('[data-cal]');
+for(var i=0;i<calQuick.length;i++){(function(b){
+ b.onclick=function(){
+  var d=new Date();d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+parseInt(b.getAttribute('data-cal'),10));
+  chooseDate(d);
+ };
+})(calQuick[i]);}
+$('dateChip').addEventListener('click',openCal);
 
 var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 if(SR){$('micBtn').classList.remove('hidden');var rec=null;
