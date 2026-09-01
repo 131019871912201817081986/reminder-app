@@ -165,8 +165,10 @@
  .bar i.neg{background:var(--od)}
  .bar u{font-size:9px;font-weight:800;color:var(--faint);text-decoration:none}
  .steps{margin:2px 0 9px 0;display:grid;gap:6px;padding-left:46px}
+ .stephint{font-size:11px;font-weight:700;color:var(--faint);margin-bottom:1px}
  .row.open{border-color:var(--yel)}
  .caret{font-size:12px;color:var(--faint);font-weight:800;margin-left:4px}
+ .searchbox{width:100%;border:2.5px solid var(--edge);border-radius:999px;padding:11px 15px;font:inherit;font-size:15px;background:var(--paper);color:var(--cocoa);margin-bottom:6px}
  .hide{display:none!important}
 </style>
 </head>
@@ -195,9 +197,11 @@
    <h1>your list</h1>
    <span class="count" id="topPts">0</span>
    <span class="count" id="topCount">0/0</span>
+   <button class="icb" id="searchBtn" aria-label="Search">&#128269;</button>
    <button class="icb" id="refreshBtn" aria-label="Refresh">&#8635;</button>
    <button class="icb" id="gearBtn" aria-label="Settings">&#9881;</button>
   </div>
+  <input id="searchIn" class="searchbox hide" placeholder="search your reminders…" autocomplete="off">
   <div id="lists"></div>
  </section>
  <section class="pane" id="paneChat">
@@ -231,7 +235,7 @@
   <div class="togg">sounds <button class="sw" id="swSound" aria-label="Toggle sounds"><i></i></button></div>
   <div class="togg">buzz <button class="sw" id="swBuzz" aria-label="Toggle vibration"><i></i></button></div>
   <div class="srow"><button id="setupBack">back</button><button class="go" id="saveBtn">save</button></div>
-  <p style="text-align:center;margin-top:14px;font-size:11.5px">poko v7 · chat</p>
+  <p style="text-align:center;margin-top:14px;font-size:11.5px">poko v9</p>
  </div>
 </section>
 
@@ -571,23 +575,21 @@ function writePts(ls,total,day,delta){
   var m=ls[i].match(/^#\s*poko-hist:(.*)$/);
   if(m){hI=i;m[1].split(',').forEach(function(x){var b=x.split('=');if(b[0])hist[b[0]]=+b[1]||0})}}
  var line='# poko-points:'+total+':'+(day||today);
- if(p>=0)ls[p]=line;else ls.unshift(line);
+ if(p>=0)ls[p]=line;else ls.push(line);
  if(delta){
   hist[today]=(hist[today]||0)+delta;
   var keys=Object.keys(hist).sort().slice(-14);
   var out={};keys.forEach(function(k){out[k]=hist[k]});
   var hl='# poko-hist:'+keys.map(function(k){return k+'='+out[k]}).join(',');
-  if(hI>=0)ls[hI]=hl;else ls.splice(p>=0?p+1:1,0,hl);
+  if(hI>=0)ls[hI]=hl;else ls.push(hl);
  }
  return ls;
 }
 function award(n,why){
  if(!n)return;
- var cur=readPts();
- var ls=writePts(lines.slice(),cur.n+n,cur.last,n);
- lines=ls;
  if(n>0)floatPts('+'+n);
- save(ls,'Points '+(n>0?'+':'')+n).then(function(){render()});
+ mutate(function(ls){var cur=readPts();return writePts(ls,cur.n+n,cur.last,n)},
+  'Points '+(n>0?'+':'')+n).then(function(){render()});
 }
 function floatPts(txt){
  var s=document.createElement('span');s.className='spark';s.style.fontSize='19px';s.style.fontWeight='800';
@@ -757,6 +759,7 @@ function parseLine(l){var t=l.trim();if(!t)return null;
  o.text=parts[0];o.steps=parts.slice(1);
  o.time=g.time;o.cat=g.cat;o.slot=g.slot;o.done=g.done;o.od=g.od;
  o.sub=g.sub||new Array(o.steps.length+1).join('0');
+ o.raw=l;
  return o;
 }
 function dueOn(p,day){var dw=SH[day.getDay()];
@@ -775,13 +778,15 @@ function streak(){for(var i=0;i<lines.length;i++){var m=lines[i].match(/^#\s*pok
 function bumpStreak(ls){var t=new Date();t.setHours(0,0,0,0);var s=iso(t),n=1,f=-1;
  for(var i=0;i<ls.length;i++){var m=ls[i].match(/^#\s*poko-streak:(\d+):(\d{4}-\d{2}-\d{2})/);
   if(m){f=i;var df=Math.round((t-new Date(m[2]+'T00:00:00'))/86400000);n=df===0?+m[1]:(df===1?+m[1]+1:1);break}}
- var l='# poko-streak:'+n+':'+s;if(f>=0)ls[f]=l;else ls.unshift(l);return ls}
+ var l='# poko-streak:'+n+':'+s;if(f>=0)ls[f]=l;else ls.push(l);return ls}
 function greeting(){var h=new Date().getHours();
  if(h<5)return'still up?';if(h<12)return'morning!';if(h<17)return'afternoon!';if(h<21)return'evening!';return'evening!'}
 
 function render(){
  var today=new Date();today.setHours(0,0,0,0);var ts=iso(today);
  items=[];lines.forEach(function(l,i){var p=parseLine(l);if(p){p.idx=i;items.push(p)}});
+ var q=($('searchIn').value||'').toLowerCase().trim();
+ if(q)items=items.filter(function(p){return (p.text+' '+p.steps.join(' ')+' '+(p.cat||'')).toLowerCase().indexOf(q)>=0});
  var over=items.filter(function(p){return p.kind==='dated'&&p.d<today&&(!p.done||p.done===ts)});
  over.forEach(function(p){p.overdue=Math.round((today-p.d)/86400000)});
  var due=items.filter(function(p){return dueOn(p,today)});
@@ -942,6 +947,9 @@ function rowEl(p,today,isDue){
 var openIdx={};
 function stepsBox(p){
  var box=document.createElement('div');box.className='steps';
+ var hint=document.createElement('div');hint.className='stephint';
+ hint.textContent='steps are optional \u2014 ticking the task itself is what finishes it';
+ box.appendChild(hint);
  p.steps.forEach(function(st,i){
   var on=p.sub.charAt(i)==='1';
   var row=document.createElement('div');row.className='sub1'+(on?' on':'');
@@ -958,12 +966,41 @@ function toggleOpen(p,r){
  openIdx[p.text]=true;r.className+=' open';
  r.parentNode.insertBefore(stepsBox(p),r.nextSibling);
 }
+function lineOf(p){
+ if(lines[p.idx]===p.raw)return p.idx;
+ var i=lines.indexOf(p.raw);
+ return i>=0?i:p.idx;
+}
 function b64(s){return btoa(unescape(encodeURIComponent(s)))}
-function save(ls,msg){
- return api('/contents/reminders.txt',{method:'PUT',body:JSON.stringify({message:msg,content:b64(ls.join('\n')),sha:sha})})
- .then(function(r){if(r.status===409){load();toast('list just changed \u2014 try again','err');return false}
-  if(!r.ok){toast('couldn\u2019t save \u2014 token needs Contents read & write','err');return false}
-  return r.json().then(function(d){sha=d.content.sha;lines=ls.slice();return true})})}
+var saveChain=Promise.resolve();
+function mutate(fn,msg){
+ var run=function(){
+  var ls=fn(lines.slice());
+  if(!ls)return Promise.resolve(false);
+  return rawSave(ls,msg);
+ };
+ saveChain=saveChain.then(run,run);
+ return saveChain;
+}
+function save(ls,msg){return mutate(function(){return ls},msg)}
+function rawSave(ls,msg){
+ if(!navigator.onLine){toast('you\u2019re offline \u2014 i\u2019ll need a connection for that','err');return Promise.resolve(false)}
+ var run=function(){
+  return api('/contents/reminders.txt',{method:'PUT',body:JSON.stringify({message:msg,content:b64(ls.join('\n')),sha:sha})})
+  .then(function(r){
+   if(r.status===409||r.status===422){
+    return api('/contents/reminders.txt').then(function(x){return x.json()}).then(function(d){
+     sha=d.sha;
+     return api('/contents/reminders.txt',{method:'PUT',body:JSON.stringify({message:msg,content:b64(ls.join('\n')),sha:sha})})
+      .then(function(r2){if(!r2.ok){toast('couldn\u2019t save that one \u2014 try again','err');return false}
+       return r2.json().then(function(d2){sha=d2.content.sha;lines=ls.slice();return true})})})}
+   if(r.status===401||r.status===403){toast('github said no \u2014 your token may have expired (\u2699 settings)','err');return false}
+   if(!r.ok){toast('couldn\u2019t save \u2014 token needs Contents read & write','err');return false}
+   return r.json().then(function(d){sha=d.content.sha;lines=ls.slice();return true})})
+  .catch(function(){toast('no connection \u2014 that didn\u2019t save','err');return false});
+ };
+ return run();
+}
 function stripTags(l){return l.replace(TAG,' ').replace(/\s+/g,' ').trim()}
 function reTag(p,body,doneVal,subVal){
  var head=p.kind==='dated'?iso(p.d):(p.kind==='daily'?'EVERY day':(p.kind==='monthly'?'EVERY month:'+p.day:'EVERY '+p.days.join(',')));
@@ -981,8 +1018,12 @@ function toggleStep(p,i){
  arr[i]=arr[i]==='1'?'0':'1';var nu=arr.join('');
  if(arr[i]==='1'){ding();buzz(8)}
  var body=[p.text].concat(p.steps).join(' | ');
- var ls=lines.slice();ls[p.idx]=reTag(p,body,p.done,nu);
- save(ls,'Step').then(function(ok){if(ok){render();if(arr[i]==='1')award(2)}});
+ mutate(function(ls){var ix=lineOf(p);var cur=parseLine(ls[ix]);
+  if(!cur)return null;
+  var a2=(cur.sub||'').split('');while(a2.length<cur.steps.length)a2.push('0');
+  a2[i]=arr[i];
+  ls[ix]=reTag(cur,[cur.text].concat(cur.steps).join(' | '),cur.done,a2.join(''));
+  return ls},'Step').then(function(ok){if(ok){render();if(arr[i]==='1')award(2)}});
 }
 function tick(p,mark,rowRef){
  if(rowRef){if(rowRef.dataset.busy)return;rowRef.dataset.busy='1';
@@ -993,15 +1034,17 @@ function tick(p,mark,rowRef){
   setTimeout(function(){el.className=(mood==='ring'?'ring':'wave')},560)}
  var today=new Date();today.setHours(0,0,0,0);var ts=iso(today);
  var body=[p.text].concat(p.steps).join(' | ');
- var ls=lines.slice();
- ls[p.idx]=reTag(p,body,mark?ts:null,p.sub);
  var all=false;
- if(mark){var left=false;
-  ls.forEach(function(l,i){var q=parseLine(l);if(!q||i===p.idx)return;
-   var od=q.kind==='dated'&&q.d<today&&q.done!==ts;
-   if((dueOn(q,today)||od)&&q.done!==ts)left=true});
-  if(!left){ls=bumpStreak(ls);all=true}}
- save(ls,mark?'Tick off':'Untick').then(function(ok){
+ mutate(function(ls){
+  var ix=lineOf(p);var cur=parseLine(ls[ix]);
+  if(!cur)return null;
+  ls[ix]=reTag(cur,[cur.text].concat(cur.steps).join(' | '),mark?ts:null,cur.sub);
+  if(mark){var left=false;
+   ls.forEach(function(l,i){var q=parseLine(l);if(!q||i===ix)return;
+    var od=q.kind==='dated'&&q.d<today&&q.done!==ts;
+    if((dueOn(q,today)||od)&&q.done!==ts)left=true});
+   if(!left){ls=bumpStreak(ls);all=true}}
+  return ls},mark?'Tick off':'Untick').then(function(ok){
   if(rowRef)rowRef.dataset.busy='';
   render();
   if(ok&&mark)award(10+(all?20:0));
@@ -1023,13 +1066,15 @@ $('edSave').onclick=function(){
  var st=$('edSteps').value.split('\n').map(function(x){return x.trim()}).filter(Boolean);
  $('editbg').className='bg';
  var q={kind:p.kind,d:p.d,day:p.day,days:p.days,time:tm||null,cat:p.cat,slot:p.slot,od:p.od};
- var ls=lines.slice();ls[p.idx]=reTag(q,[nu].concat(st).join(' | '),p.done,p.sub.slice(0,st.length));
+ var ls=lines.slice();ls[lineOf(p)]=reTag(q,[nu].concat(st).join(' | '),p.done,p.sub.slice(0,st.length));
  save(ls,'Edit reminder').then(function(ok){if(ok){toast('updated','ok');render()}})};
-function del(p){undoLine=lines[p.idx];undoIdx=p.idx;
- var ls=lines.filter(function(_,i){return i!==p.idx});
- save(ls,'Delete reminder').then(function(ok){if(ok){toast('forgotten','ok',true);render()}})}
-function doUndo(){if(undoLine===null)return;var ls=lines.slice();ls.splice(Math.min(undoIdx,ls.length),0,undoLine);undoLine=null;
- save(ls,'Undo delete').then(function(ok){if(ok){toast('brought it back','ok');render()}})}
+function del(p){undoLine=p.raw;undoIdx=lineOf(p);
+ mutate(function(ls){var ix=ls.indexOf(p.raw);if(ix<0)return null;
+  undoIdx=ix;return ls.filter(function(_,i){return i!==ix})},'Delete reminder')
+ .then(function(ok){if(ok){toast('forgotten','ok',true);render()}})}
+function doUndo(){if(undoLine===null)return;var l=undoLine;undoLine=null;
+ mutate(function(ls){ls.splice(Math.min(undoIdx,ls.length),0,l);return ls},'Undo delete')
+ .then(function(ok){if(ok){toast('brought it back','ok');render()}})}
 
 var timT=null;
 var TIMSAY=['off we go!','you\u2019re doing it','still here with you','keep going, nearly there','last stretch!'];
@@ -1113,6 +1158,7 @@ function buildCats(){var w=$('catChips');w.innerHTML='';
 $('addGo').onclick=function(){
  var v=$('addText').value.trim();
  if(!v){toast('tell me something first!','err');return}
+ if(!dumpMode&&looksDuplicate(parseInput(v).text)&&!confirm('you\u2019ve already got something like that \u2014 add it anyway?'))return;
  var newLines=[],labels=[];
  if(dumpMode){
   var raw=v.split('\n').map(function(x){return x.trim()}).filter(Boolean);
@@ -1140,17 +1186,22 @@ $('addGo').onclick=function(){
  $('addbg').className='bg';buzz(14);ding();setMood('yay');
  pending=labels.slice();render();
  var ls=lines.concat(newLines);
- save(ls,'Add reminder').then(function(ok){
+ mutate(function(l2){return l2.concat(newLines)},'Add reminder').then(function(ok){
   pending=[];
   if(ok){render();toast(labels.length>1?'added '+labels.length+' things':'got it \u2014 it\u2019s on the list','ok')}
   else{setMood('hmm');render()}})
 };
+function looksDuplicate(txt){
+ var t=txt.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+ if(t.length<4)return false;
+ return items.some(function(p){return p.text.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim()===t});
+}
 function commitLines(arr){
  var nl=[],lb=[];
  arr.forEach(function(one){var o=parseInput(one);nl.push(buildLine(o,[],pickCat,pickSlot));lb.push(o.text)});
  if(!nl.length)return;
  buzz(14);ding();setMood('yay');pending=lb.slice();render();
- save(lines.concat(nl),'Add reminders').then(function(ok){pending=[];
+ mutate(function(ls){return ls.concat(nl)},'Add reminders').then(function(ok){pending=[];
   if(ok){render();toast(lb.length>1?'added '+lb.length+' things':'got it \u2014 it\u2019s on the list','ok')}
   else{setMood('hmm');render()}});
 }
@@ -1208,7 +1259,22 @@ $('pager').addEventListener('scroll',function(){var n=Math.round($('pager').scro
  $('chatbar').className='chatbar'+(n===2?' on':'');
  $('fab').className='fab'+(n===2?' hide':'');
  $('dots').className='dots'+(n===2?' hide':'');});
+$('searchBtn').onclick=function(){var s=$('searchIn');
+ if(s.className.indexOf('hide')>=0){s.className='searchbox';s.focus()}
+ else{s.className='searchbox hide';s.value='';render()}};
+$('searchIn').addEventListener('input',render);
 $('refreshBtn').onclick=load;
+var lastDay=iso(new Date());
+document.addEventListener('visibilitychange',function(){
+ if(document.hidden)return;
+ var now=iso(new Date());
+ if(now!==lastDay){lastDay=now;load()}
+ else if(store.get().token)load();
+});
+setInterval(function(){
+ var now=iso(new Date());
+ if(now!==lastDay){lastDay=now;load()}
+},60000);
 function sw(id,key){var b=$(id);function paint(){b.className='sw'+(opt(key,true)?' on':'')}
  b.onclick=function(){localStorage.setItem(key,opt(key,true)?'0':'1');paint();if(key==='poko_sound')ding()};paint()}
 sw('swSound','poko_sound');sw('swBuzz','poko_buzz');
@@ -1216,8 +1282,22 @@ $('gearBtn').onclick=function(){showSetup()};
 $('setupBack').onclick=function(){showApp()};
 function showSetup(){var c=store.get();$('inUser').value=c.user;$('inRepo').value=c.repo;$('inToken').value=c.token;$('inAI').value=aiKey();
  $('setupPane').className='pane';$('pager').className='pager hide';$('fab').className='fab hide';$('dots').className='dots hide'}
+function checkToken(){
+ var seen=localStorage.getItem('poko_tokwarn')||'';
+ var today=iso(new Date());
+ if(seen===today)return;
+ api('/contents/reminders.txt').then(function(r){
+  var exp=r.headers&&r.headers.get?r.headers.get('github-authentication-token-expiration'):null;
+  if(!exp)return;
+  var days=Math.round((new Date(exp)-new Date())/86400000);
+  if(days<=14&&days>=0){
+   localStorage.setItem('poko_tokwarn',today);
+   toast('heads up: your github token expires in '+days+' day'+(days===1?'':'s')+' \u2014 renew it in \u2699','err');
+  }
+ }).catch(function(){});
+}
 function showApp(){$('setupPane').className='pane hide';$('pager').className='pager';$('fab').className='fab';$('dots').className='dots';
- face($('chatPoko'),'hi');paintChat();
+ face($('chatPoko'),'hi');paintChat();checkToken();
  setMood('hi');load()}
 $('saveBtn').onclick=function(){var u=$('inUser').value.trim(),r=$('inRepo').value.trim(),t=$('inToken').value.trim();
  if(!u||!r||!t){toast('poko needs all three!','err');return}
@@ -1225,6 +1305,20 @@ $('saveBtn').onclick=function(){var u=$('inUser').value.trim(),r=$('inRepo').val
  if(k!==aiKey()){localStorage.setItem('poko_ai',k);localStorage.removeItem('poko_model')}
  store.set(u,r,t);showApp()};
 
+(function(){
+ var sheets=['addbg','actbg','editbg','calbg','catbg','aibg','timbg'];
+ function anyOpen(){for(var i=0;i<sheets.length;i++){var e=$(sheets[i]);if(e&&e.className.indexOf('on')>=0)return e}return null}
+ var watching=false;
+ setInterval(function(){
+  var o=anyOpen();
+  if(o&&!watching){watching=true;history.pushState({sheet:1},'')}
+  else if(!o&&watching){watching=false}
+ },250);
+ window.addEventListener('popstate',function(){
+  var o=anyOpen();
+  if(o){o.className=o.className.replace(' on','');watching=false}
+ });
+})();
 (function(){var q=new URLSearchParams(location.search);
  var sh=[q.get('title'),q.get('text'),q.get('url')].filter(Boolean).join(' ').trim();
  var c=store.get();
